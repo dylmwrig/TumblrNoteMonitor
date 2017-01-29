@@ -9,6 +9,7 @@ import java.util.Map;
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
 import com.gargoylesoftware.htmlunit.html.*; //way too many elements to do it individualy lol
+import com.gargoylesoftware.htmlunit.javascript.host.html.HTMLElement;
 import com.tumblr.jumblr.*;
 import com.tumblr.jumblr.types.*; 
 
@@ -17,7 +18,7 @@ public class Monitor
 	private JumblrClient client = new JumblrClient(
 			"xmHAWsN1lRng5IOyxMBijxmNtrwdAE9VCSqfcITBnxi0BitvOc",
 			"V91snqcARLP1XznQt7vc4nsLtcQZzoK5r3Rtgr7DvTULkDxiHT");
-	private Blog blog = client.blogInfo("weiss-blake.tumblr.com");
+	private Blog blog = client.blogInfo("thelotusmaiden.tumblr.com");
 	
 
 	private Monitor()
@@ -37,21 +38,92 @@ public class Monitor
 	//test stuff here
 	private void Test()
 	{
-		WebClient client = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
-		String url = "http://thelotusmaiden.tumblr.com/post/155180649080/thelotusmaiden-late-night-shopping-high-res";
+//8
+		List <Post> posts = blog.posts();
+		Post newest = posts.get(2); //put the index of whatever post you want in here
+		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
+		final WebClient client = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
+		client.getOptions().setThrowExceptionOnFailingStatusCode(false);
+		client.getOptions().setThrowExceptionOnScriptError(false);
+		//String url = "http://thelotusmaiden.tumblr.com/post/155180649080/thelotusmaiden-late-night-shopping-high-res";
+		String url = "http://thelotusmaiden.tumblr.com";
+		
+		//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
+		//the program will crash. So put it in a try block
 		try 
 		{
-			HtmlPage page = client.getPage(url);
-			HtmlAnchor anchor = page.getAnchorByHref("http://moonbearx.tumblr.com/");
-			System.out.println(anchor.getHrefAttribute());
-		}
+			final HtmlPage page = client.getPage(url);
+			//client.waitForBackgroundJavaScript(50000);
+			System.out.println(page.getTitleText());
+			try
+			{
+				HtmlAnchor link = page.getAnchorByHref(postHref);
+				HtmlPage notePage = link.click();
+				System.out.println("Page name: " + notePage.getBaseURL());
+				HtmlAnchor showMore;
+				if ((showMore = notePage.getAnchorByText("Show more notes")) != null)
+				{
+					System.out.println("Exists!");
+				}
+				
+				else
+				{
+					System.out.println("DNE");
+				}
+			} //end try
+			
+			catch(Exception e)
+			{
+				System.out.println("No more notes to display.");
+			} //end catch
+			/*
+			HtmlPage moreNotes = showMore.click();
+			
+			//DomElement loading = moreNotes.getByXPath("//span[starts-with(@class, 'notes_loading'");
+			
+			//final List<DomElement> spans = page.getElementTagName("span");
+			
+			client.waitForBackgroundJavaScript(20000);
+			
+			System.out.println("Second page name : " + moreNotes.getBaseURL());
+			DomNodeList noteList = moreNotes.getElementsByTagName("li");
+			System.out.println("Size " + noteList.size());
+			System.out.println("To string " + noteList.get(1).toString());
+		
+			final List<?> reblogs = moreNotes.getByXPath("//li[starts-with(@class, 'note reblog')]");
+			
+			
+			int i = 0;
+			for (Object o : reblogs)
+			{
+				System.out.println("Here's my test " + reblogs.get(i));
+				i++;
+			}
+			
+			
+			*/
+			
+			//HtmlList 
+			
+			/*	
+			for (DomNode node : noteList)
+			{
+				if ("li".equals(arg0))
+			
+			}
+			*/
+		} //end try
 		
 		catch (Exception e)
 		{
 			e.printStackTrace();
-		}
+		}	
 		
+		finally
+		{
+			client.close();
+		}
 	}
 	
 	private void Run()
