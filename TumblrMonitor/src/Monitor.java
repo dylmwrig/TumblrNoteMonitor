@@ -40,7 +40,8 @@ public class Monitor
 	{
 //8
 		List <Post> posts = blog.posts();
-		Post newest = posts.get(2); //put the index of whatever post you want in here
+		Post newest = posts.get(3); //put the index of whatever post you want in here
+		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
 		final WebClient client = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
@@ -49,34 +50,40 @@ public class Monitor
 		//String url = "http://thelotusmaiden.tumblr.com/post/155180649080/thelotusmaiden-late-night-shopping-high-res";
 		String url = "http://thelotusmaiden.tumblr.com";
 		
-		//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
-		//the program will crash. So put it in a try block
 		try 
 		{
 			final HtmlPage page = client.getPage(url);
-			//client.waitForBackgroundJavaScript(50000);
+			client.waitForBackgroundJavaScript(20000);
 			System.out.println(page.getTitleText());
-			try
+
+			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
+			HtmlPage notePage = link.click(); //this is the page you will pull your notes from
+			client.waitForBackgroundJavaScript(20000);
+
+			//while there are more notes buttons to click, keep clicking
+			//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
+			//the program will crash. So put it in a try block
+			boolean keepClicking = true;
+			int clickCount = 0; //keeps track of amount of show more notes, mainly for testing
+			while (keepClicking)
 			{
-				HtmlAnchor link = page.getAnchorByHref(postHref);
-				HtmlPage notePage = link.click();
-				System.out.println("Page name: " + notePage.getBaseURL());
-				HtmlAnchor showMore;
-				if ((showMore = notePage.getAnchorByText("Show more notes")) != null)
+				try
 				{
-					System.out.println("Exists!");
-				}
+					System.out.println("Page name: " + notePage.getBaseURL());
+					HtmlAnchor showMore = notePage.getAnchorByText("Show more notes");
+					notePage = showMore.click(); //load the extra notes
+					System.out.println("Clicked " + clickCount + " times");
+					clickCount++;
+					client.waitForBackgroundJavaScript(20000);
+				} //end try
 				
-				else
+				catch(Exception e) //make your catches more specific rather than gotta catch em all every time
 				{
-					System.out.println("DNE");
-				}
-			} //end try
-			
-			catch(Exception e)
-			{
-				System.out.println("No more notes to display.");
-			} //end catch
+					System.out.println("No more notes to display.");
+					System.out.println("Clicked show more " + clickCount + " times.");
+					keepClicking = false;
+				} //end catch
+			} //end while
 			/*
 			HtmlPage moreNotes = showMore.click();
 			
@@ -114,6 +121,7 @@ public class Monitor
 			}
 			*/
 		} //end try
+		
 		
 		catch (Exception e)
 		{
