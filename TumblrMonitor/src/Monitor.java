@@ -9,6 +9,7 @@ import java.util.Map;
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
 import com.gargoylesoftware.htmlunit.html.*; //way too many elements to do it individualy lol
+import com.gargoylesoftware.htmlunit.javascript.host.dom.Node;
 import com.gargoylesoftware.htmlunit.javascript.host.html.HTMLElement;
 import com.tumblr.jumblr.*;
 import com.tumblr.jumblr.types.*; 
@@ -74,7 +75,7 @@ public class Monitor
 					notePage = showMore.click(); //load the extra notes
 					System.out.println("Clicked " + clickCount + " times");
 					clickCount++;
-					client.waitForBackgroundJavaScript(20000);
+					client.waitForBackgroundJavaScript(10000);
 				} //end try
 				
 				catch(Exception e) //make your catches more specific rather than gotta catch em all every time
@@ -84,42 +85,33 @@ public class Monitor
 					keepClicking = false;
 				} //end catch
 			} //end while
-			/*
-			HtmlPage moreNotes = showMore.click();
 			
 			//DomElement loading = moreNotes.getByXPath("//span[starts-with(@class, 'notes_loading'");
 			
 			//final List<DomElement> spans = page.getElementTagName("span");
 			
-			client.waitForBackgroundJavaScript(20000);
-			
-			System.out.println("Second page name : " + moreNotes.getBaseURL());
-			DomNodeList noteList = moreNotes.getElementsByTagName("li");
+			System.out.println("Second page name : " + notePage.getBaseURL());
+			//DomNodeList noteList = notePage.getElementsByTagName("li");
+			final List<?> noteList = notePage.getByXPath("//li");//[starts-with(@class, 'note')]");
 			System.out.println("Size " + noteList.size());
 			System.out.println("To string " + noteList.get(1).toString());
+			
 		
-			final List<?> reblogs = moreNotes.getByXPath("//li[starts-with(@class, 'note reblog')]");
+			final List<?> reblogs = notePage.getByXPath("//li[starts-with(@class, 'note reblog')]");
 			
-			
-			int i = 0;
-			for (Object o : reblogs)
+			System.out.println(reblogs.get(10).getClass());
+			//testing
+			for (int i = 0; i < reblogs.size(); i++)
 			{
-				System.out.println("Here's my test " + reblogs.get(i));
-				i++;
+				System.out.println("Here's my test at position " + i + " " + reblogs.get(i)); 
 			}
-			
-			
-			*/
-			
-			//HtmlList 
-			
-			/*	
-			for (DomNode node : noteList)
-			{
-				if ("li".equals(arg0))
-			
-			}
-			*/
+
+			final Iterable<DomElement> test = ((DomElement) reblogs.get(10)).getChildElements();
+			//HtmlListItem noteListItem = reblogs.get(10);
+			//DomNode test = ((DomNode) reblogs.get(10)).getFirstChild();
+			List<DomElement> target = new ArrayList<DomElement>(); //create array list to hold contents of iterable
+			test.forEach(target :: add); //add each iterable to the list
+			System.out.println(target.get(0));
 		} //end try
 		
 		
