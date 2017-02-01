@@ -1,6 +1,7 @@
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,12 +55,12 @@ public class Monitor
 		try 
 		{
 			final HtmlPage page = client.getPage(url);
-			client.waitForBackgroundJavaScript(20000);
+			client.waitForBackgroundJavaScript(3000);
 			System.out.println(page.getTitleText());
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
 			HtmlPage notePage = link.click(); //this is the page you will pull your notes from
-			client.waitForBackgroundJavaScript(20000);
+			client.waitForBackgroundJavaScript(3000);
 
 			//while there are more notes buttons to click, keep clicking
 			//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
@@ -75,7 +76,7 @@ public class Monitor
 					notePage = showMore.click(); //load the extra notes
 					System.out.println("Clicked " + clickCount + " times");
 					clickCount++;
-					client.waitForBackgroundJavaScript(10000);
+					client.waitForBackgroundJavaScript(3000);
 				} //end try
 				
 				catch(Exception e) //make your catches more specific rather than gotta catch em all every time
@@ -106,12 +107,28 @@ public class Monitor
 				System.out.println("Here's my test at position " + i + " " + reblogs.get(i)); 
 			}
 
-			final Iterable<DomElement> test = ((DomElement) reblogs.get(10)).getChildElements();
+			Iterable<DomElement> test = ((DomElement) reblogs.get(10)).getChildElements();
 			//HtmlListItem noteListItem = reblogs.get(10);
 			//DomNode test = ((DomNode) reblogs.get(10)).getFirstChild();
 			List<DomElement> target = new ArrayList<DomElement>(); //create array list to hold contents of iterable
 			test.forEach(target :: add); //add each iterable to the list
-			System.out.println(target.get(0));
+			test = ((DomElement) target.get(1)).getChildElements();
+			test.forEach(target :: add);
+			for (int i = 0; i < target.size(); i++)
+			{
+				System.out.println(target.get(i));
+			}
+			String brute = target.get(4).toString();
+			System.out.println("brute force? " + brute);
+			String[] split = brute.split("/*");
+			System.out.println("split attempt " + Arrays.asList(brute.split("://|\\.")));
+			split = brute.split("://|\\.");
+			//System.out.println("get attribute " + target.get(1).getAttribute("href"));1
+			System.out.println("split [0] " + split[0]);
+			System.out.println("split [1] " + split[1]);
+			System.out.println("split [2] " + split[2]);
+			System.out.println("lets try this " + Arrays.asList(split));
+			System.out.println("whoop whoop " + split[1]);
 		} //end try
 		
 		
