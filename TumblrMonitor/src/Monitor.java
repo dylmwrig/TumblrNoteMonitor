@@ -40,7 +40,6 @@ public class Monitor
 	//test stuff here
 	private void Test()
 	{
-//8
 		List <Post> posts = blog.posts();
 		Post newest = posts.get(3); //put the index of whatever post you want in here
 		
@@ -121,14 +120,14 @@ public class Monitor
 			String brute = target.get(4).toString();
 			System.out.println("brute force? " + brute);
 			String[] split = brute.split("/*");
-			System.out.println("split attempt " + Arrays.asList(brute.split("://|\\.")));
+			System.out.println("split attempt " + Arrays.asList(brute.split("http://|\\.tumblr")));
 			split = brute.split("://|\\.");
 			//System.out.println("get attribute " + target.get(1).getAttribute("href"));1
 			System.out.println("split [0] " + split[0]);
 			System.out.println("split [1] " + split[1]);
 			System.out.println("split [2] " + split[2]);
 			System.out.println("lets try this " + Arrays.asList(split));
-			System.out.println("whoop whoop " + split[1]);
+			System.out.println("whoop whoop " + split[1]); //get the item in location one, thing part of the string targeted by the delimiter: this is the name of the person who reblogged
 		} //end try
 		
 		
