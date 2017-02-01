@@ -3,9 +3,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
@@ -54,16 +56,18 @@ public class Monitor
 		try 
 		{
 			final HtmlPage page = client.getPage(url);
-			client.waitForBackgroundJavaScript(3000);
+			client.waitForBackgroundJavaScript(500);
 			System.out.println(page.getTitleText());
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
 			HtmlPage notePage = link.click(); //this is the page you will pull your notes from
-			client.waitForBackgroundJavaScript(3000);
+			client.waitForBackgroundJavaScript(500);
 
 			//while there are more notes buttons to click, keep clicking
 			//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
 			//the program will crash. So put it in a try block
+			//I may try putting all of the "most popular person to reblog from" section into here but the list you
+			//get from this could be valuable for other stuff like most popular tags.
 			boolean keepClicking = true;
 			int clickCount = 0; //keeps track of amount of show more notes, mainly for testing
 			while (keepClicking)
@@ -75,7 +79,7 @@ public class Monitor
 					notePage = showMore.click(); //load the extra notes
 					System.out.println("Clicked " + clickCount + " times");
 					clickCount++;
-					client.waitForBackgroundJavaScript(3000);
+					client.waitForBackgroundJavaScript(500);
 				} //end try
 				
 				catch(Exception e) //make your catches more specific rather than gotta catch em all every time
@@ -91,11 +95,6 @@ public class Monitor
 			//final List<DomElement> spans = page.getElementTagName("span");
 			
 			System.out.println("Second page name : " + notePage.getBaseURL());
-			//DomNodeList noteList = notePage.getElementsByTagName("li");
-			final List<?> noteList = notePage.getByXPath("//li");//[starts-with(@class, 'note')]");
-			System.out.println("Size " + noteList.size());
-			System.out.println("To string " + noteList.get(1).toString());
-			
 		
 			final List<?> reblogs = notePage.getByXPath("//li[starts-with(@class, 'note reblog')]");
 			
@@ -106,29 +105,70 @@ public class Monitor
 				System.out.println("Here's my test at position " + i + " " + reblogs.get(i)); 
 			}
 
-			Iterable<DomElement> test = ((DomElement) reblogs.get(10)).getChildElements();
+			//initialize the iterable to the first reblog so that we've initialized it properly
+			Iterable<DomElement> children = ((DomElement) reblogs.get(0)).getChildElements();
+			
+			//store the child elements of each reblog, so we can more easily navigate it and pull most popular
+			//person to reblog from
+			for (int i = 0; i < reblogs.size(); ++i)
+			{
+				children = ((DomElement) reblogs.get(i)).getChildElements();
+				List<DomElement> target = new ArrayList<DomElement>(); //create array list to hold contents of iterable
+				children.forEach(target :: add); //add each iterable to the list
+				children = ((DomElement) target.get(1)).getChildElements();
+				children.forEach(target :: add);
+				for (int j = 0; j < target.size(); j++)
+				{
+					System.out.println(target.get(j));
+					System.out.println("target size and what index we're at " + target.size() + " " + j);
+				}
+				if (target.size() == 4)
+				{
+					System.out.println("Original Post");
+				}
+				
+				else
+				{
+					String brute = target.get(4).toString();
+					System.out.println("brute force? " + brute);
+					String[] split = brute.split("/*");
+					System.out.println("split attempt " + Arrays.asList(brute.split("http://|\\.tumblr")));
+					split = brute.split("://|\\.");
+					//System.out.println("get attribute " + target.get(1).getAttribute("href"));1
+					System.out.println("split [0] " + split[0]);
+					System.out.println("split [1] " + split[1]);
+					System.out.println("split [2] " + split[2]);
+					System.out.println("Size of split " + split.length);
+					System.out.println("lets try this " + Arrays.asList(split));
+					ArrayList<String> rebloggedFrom = new ArrayList<String>();
+					System.out.println("Reblogged from size " + rebloggedFrom.size());
+					rebloggedFrom.add(split[1]);
+					System.out.println("Size of reblogs and what index we're at " + reblogs.size() + " " + i);
+					
+					Map reblogSources = new LinkedHashMap();
+					int reblogCount = 0;
+					
+					if (reblogSources.size() > 0)
+					{
+						Set set = reblogSources.entrySet(); //what is set?
+						Iterator iter = set.iterator();
+						while (iter.hasNext())
+						{
+							//TODO get the amount of times reblogged so I can iterate it if the same person comes up again
+						} //end while
+					} //end if
+					
+					else
+					{
+						reblogSources.put(rebloggedFrom.get(i), reblogCount);
+					} //end else
+					//going to store everything in the reblog name array. Also need to do checks
+					//if the name isn't in the list, add it to the end. If it is, 
+				} //end else
+			} //end for
 			//HtmlListItem noteListItem = reblogs.get(10);
 			//DomNode test = ((DomNode) reblogs.get(10)).getFirstChild();
-			List<DomElement> target = new ArrayList<DomElement>(); //create array list to hold contents of iterable
-			test.forEach(target :: add); //add each iterable to the list
-			test = ((DomElement) target.get(1)).getChildElements();
-			test.forEach(target :: add);
-			for (int i = 0; i < target.size(); i++)
-			{
-				System.out.println(target.get(i));
-			}
-			String brute = target.get(4).toString();
-			System.out.println("brute force? " + brute);
-			String[] split = brute.split("/*");
-			System.out.println("split attempt " + Arrays.asList(brute.split("http://|\\.tumblr")));
-			split = brute.split("://|\\.");
-			//System.out.println("get attribute " + target.get(1).getAttribute("href"));1
-			System.out.println("split [0] " + split[0]);
-			System.out.println("split [1] " + split[1]);
-			System.out.println("split [2] " + split[2]);
-			System.out.println("lets try this " + Arrays.asList(split));
-			System.out.println("whoop whoop " + split[1]); //get the item in location one, thing part of the string targeted by the delimiter: this is the name of the person who reblogged
-		} //end try
+			} //end try
 		
 		
 		catch (Exception e)
