@@ -43,7 +43,7 @@ public class Monitor
 	private void Test()
 	{
 		List <Post> posts = blog.posts();
-		Post newest = posts.get(3); //put the index of whatever post you want in here
+		Post newest = posts.get(4); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
@@ -108,6 +108,8 @@ public class Monitor
 			//initialize the iterable to the first reblog so that we've initialized it properly
 			Iterable<DomElement> children = ((DomElement) reblogs.get(0)).getChildElements();
 			
+			Map reblogSources = new LinkedHashMap(); //holds the sources of reblogs
+			
 			//store the child elements of each reblog, so we can more easily navigate it and pull most popular
 			//person to reblog from
 			for (int i = 0; i < reblogs.size(); ++i)
@@ -122,7 +124,7 @@ public class Monitor
 					System.out.println(target.get(j));
 					System.out.println("target size and what index we're at " + target.size() + " " + j);
 				}
-				if (target.size() == 4)
+				if (target.size() == 4) //because there is no "reblogged from field" the op has a smaller list
 				{
 					System.out.println("Original Post");
 				}
@@ -140,28 +142,49 @@ public class Monitor
 					System.out.println("split [2] " + split[2]);
 					System.out.println("Size of split " + split.length);
 					System.out.println("lets try this " + Arrays.asList(split));
+					
+					String reblogSource = split[1]; //name of person reblogged from
 					ArrayList<String> rebloggedFrom = new ArrayList<String>();
 					System.out.println("Reblogged from size " + rebloggedFrom.size());
 					rebloggedFrom.add(split[1]);
 					System.out.println("Size of reblogs and what index we're at " + reblogs.size() + " " + i);
 					
-					Map reblogSources = new LinkedHashMap();
-					int reblogCount = 0;
+					int reblogCount = 0; //this person was reblogged from at least once
+					boolean append = true; //checks if we need to add the blog name to the end
 					
-					if (reblogSources.size() > 0)
+					if (reblogSources.size() == 0) //I wonder if I can just say iter.hasNext here? Does it return false if there's nothing there to begin with?
 					{
-						Set set = reblogSources.entrySet(); //what is set?
-						Iterator iter = set.iterator();
-						while (iter.hasNext())
-						{
-							//TODO get the amount of times reblogged so I can iterate it if the same person comes up again
-						} //end while
+						reblogSources.put(reblogSource, 1); //first item so value is 1
 					} //end if
 					
 					else
 					{
-						reblogSources.put(rebloggedFrom.get(i), reblogCount);
+						Set set = reblogSources.entrySet(); //what is set?
+						Iterator iter = set.iterator();
+						
+						while (iter.hasNext())
+						{
+							Map.Entry keyValue = (Map.Entry)iter.next();
+							if (keyValue.getKey().toString().equals(reblogSource))
+							{
+								reblogCount = (int) keyValue.getValue();
+								reblogCount++;
+								keyValue.setValue(reblogCount);
+								append = false;
+								System.out.println(reblogSource + " has " + reblogCount + " reblogs\n\n\n");
+								break; //no need to keep checking if it's in there once
+							} //end if
+						} //end while
+	
+						//add the blog to the end with a value of one if it wasn't in the list
+						if (append)
+						{
+							reblogSources.put(reblogSource, reblogCount); 
+							System.out.println("Added " + reblogSource + " to the list.\n\n\n");
+						} //end if
+						
 					} //end else
+					
 					//going to store everything in the reblog name array. Also need to do checks
 					//if the name isn't in the list, add it to the end. If it is, 
 				} //end else
