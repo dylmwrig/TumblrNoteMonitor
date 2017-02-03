@@ -89,21 +89,11 @@ public class Monitor
 					keepClicking = false;
 				} //end catch
 			} //end while
-			
-			//DomElement loading = moreNotes.getByXPath("//span[starts-with(@class, 'notes_loading'");
-			
-			//final List<DomElement> spans = page.getElementTagName("span");
-			
-			System.out.println("Second page name : " + notePage.getBaseURL());
 		
 			final List<?> reblogs = notePage.getByXPath("//li[starts-with(@class, 'note reblog')]");
 			
 			System.out.println(reblogs.get(10).getClass());
 			//testing
-			for (int i = 0; i < reblogs.size(); i++)
-			{
-				System.out.println("Here's my test at position " + i + " " + reblogs.get(i)); 
-			}
 
 			//initialize the iterable to the first reblog so that we've initialized it properly
 			Iterable<DomElement> children = ((DomElement) reblogs.get(0)).getChildElements();
@@ -122,7 +112,6 @@ public class Monitor
 				for (int j = 0; j < target.size(); j++)
 				{
 					System.out.println(target.get(j));
-					System.out.println("target size and what index we're at " + target.size() + " " + j);
 				}
 				if (target.size() == 4) //because there is no "reblogged from field" the op has a smaller list
 				{
@@ -132,22 +121,15 @@ public class Monitor
 				else
 				{
 					String brute = target.get(4).toString();
-					System.out.println("brute force? " + brute);
 					String[] split = brute.split("/*");
-					System.out.println("split attempt " + Arrays.asList(brute.split("http://|\\.tumblr")));
-					split = brute.split("://|\\.");
-					//System.out.println("get attribute " + target.get(1).getAttribute("href"));1
-					System.out.println("split [0] " + split[0]);
-					System.out.println("split [1] " + split[1]);
-					System.out.println("split [2] " + split[2]);
-					System.out.println("Size of split " + split.length);
-					System.out.println("lets try this " + Arrays.asList(split));
+					//I want to make this http:// just for specificity but this breaks with https://
+					//maybe find some regex operator for this? Idk
+					split = brute.split("://|\\.tumblr"); 
 					
 					String reblogSource = split[1]; //name of person reblogged from
 					ArrayList<String> rebloggedFrom = new ArrayList<String>();
-					System.out.println("Reblogged from size " + rebloggedFrom.size());
+
 					rebloggedFrom.add(split[1]);
-					System.out.println("Size of reblogs and what index we're at " + reblogs.size() + " " + i);
 					
 					int reblogCount = 0; //this person was reblogged from at least once
 					boolean append = true; //checks if we need to add the blog name to the end
@@ -189,9 +171,26 @@ public class Monitor
 					//if the name isn't in the list, add it to the end. If it is, 
 				} //end else
 			} //end for
-			//HtmlListItem noteListItem = reblogs.get(10);
-			//DomNode test = ((DomNode) reblogs.get(10)).getFirstChild();
-			} //end try
+
+			//is there a better kind of map to use?
+			Map topSources = new LinkedHashMap(); //holds the sources of reblogs
+			if (reblogSources.size() > 0)
+			{
+				Set set = reblogSources.entrySet();
+				Iterator iter = set.iterator();
+				
+				while (iter.hasNext())
+				{
+					Map.Entry keyValue = (Map.Entry)iter.next();
+					
+					for (int i = 0; i < reblogSources.size(); i++)
+					{
+						
+					} //end for
+				} //end while
+			} //end if
+
+		} //end try
 		
 		
 		catch (Exception e)
@@ -204,6 +203,41 @@ public class Monitor
 			client.close();
 		}
 	}
+	
+	//sort hashmap based on value, descending order
+	//also sort by the amount of reblogs that we're even interested in;
+	//if we're interested in storing reblog sources outside of those, we can just make a copy of the hashmap
+	//before calling this and don't modify that. But this is meant to both sort and restrict the number of
+	//values in the hashmap
+	private HashMap sortSources(HashMap toSort, int toSortSize)
+	{
+		//throw exception if wrong size, don't feel like figuring out syntax rn lmao
+		if (toSort.size() < 1)
+		{
+			//throw IllegalArgumentExcpetion;
+		} //end if
+		
+		Set set = toSort.entrySet();
+		Iterator iter = set.iterator();
+		
+		//access each respective list by just using the index in some sort of for loop
+		//so move element at location i in keys if you're moving element in location i in values
+		List keys = new ArrayList();
+		List values = new ArrayList();
+		
+		//add each key and value pairing to their respective arrays from the hashmap
+		while (iter.hasNext())
+		{
+			Map.Entry value = (Map.Entry)iter.next();
+			keys.add(value.getKey().toString());
+			values.add(Integer.parseInt(value.getValue().toString())); //did I just get hacked?
+		} //end while
+		
+		int start = 0, end = (values.size() - 1);
+		//TODO quicksort
+		
+		return toSort;
+	} //end sortSources
 	
 	private void Run()
 	{
