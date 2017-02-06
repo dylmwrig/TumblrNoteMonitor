@@ -36,7 +36,43 @@ public class Monitor
 	public static void main(String args[])
 	{
 		//new Monitor().Run();
-		new Monitor().Test();
+		//new Monitor().Test();
+		ArrayList names = new ArrayList();
+		ArrayList count = new ArrayList();
+		names.add("I");
+		names.add("don't");
+		names.add("wanna");
+		names.add("live");
+		names.add("no");
+		names.add("mo");
+		names.add("sometimes");
+		count.add(11);
+		count.add(10);
+		count.add(4);
+		count.add(2);
+		count.add(5);
+		count.add(19);
+		count.add(8);
+		
+		int test = Integer.parseInt(count.get(0).toString());
+		int test2 = Integer.parseInt(count.get(1).toString());
+
+		for (int i = 0; i < count.size(); i++)
+		{
+			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
+		} //end for
+		
+		int start = 0, end = (count.size() - 2);
+		
+		System.out.println("test and test2 " + test + " " + test2);
+		System.out.println(Integer.compare(test, test2));
+		Monitor myTest = new Monitor();
+		myTest.quickSort(names, count, start, end);
+		
+		for (int i = 0; i < count.size(); i++)
+		{
+			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
+		} //end for
 	} //end main
 	
 	//test stuff here
@@ -239,7 +275,136 @@ public class Monitor
 		return toSort;
 	} //end sortSources
 	
-	private void Run()
+	//quick sort algorithm to sort both most popular person to reblog from and most popular tag
+	//basically anything in this program which will be fed into a list which will need to be sorted will go through this
+	private void quickSort(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
+	{
+		int pivot = (end + 1), valueA, valueB;
+
+		valueA = Integer.parseInt(count.get(start).toString()); //jesus just accessing these values is a pain.
+		valueB = Integer.parseInt(count.get(pivot).toString()); //compare pivot and start values first
+		
+		int partition;
+		
+		pivot = Integer.parseInt(count.get(end).toString());
+		partition = partition(names, count, start, end);
+		quickSort(names, count, start, partition - 1);
+		quickSort(names, count, partition + 1, end);
+		
+	} //end quickSort
+	
+	//preliminary 
+	private int partition(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
+	{
+		System.out.println(Integer.parseInt(count.get(0).toString()) + 2);
+		System.out.println(names.get(0));
+		
+		//index locations we're checking each time
+		int pivot = (end + 1), valueA, valueB;
+		boolean keepGoing = true;
+
+		System.out.println("HERE IS END AND PIVOT " + end + " " + pivot);
+		
+		//should this be strictly lesser than or <=?
+		while (start < end)
+		{
+			System.out.println("start of loop: start and end " + start + " " + end);
+			
+			valueA = Integer.parseInt(count.get(start).toString()); //jesus just accessing these values is a pain.
+			valueB = Integer.parseInt(count.get(pivot).toString()); //compare pivot and start values first
+			
+			//while the values on the left are smaller than the pivot, access the next element.
+			//same goes for larger values, just access the previous element
+			while (Integer.compare(valueA, valueB) < 0) //while a is less than b
+			{
+				System.out.println(Integer.parseInt(count.get(start).toString()) + " > " + Integer.parseInt(count.get(pivot).toString()));
+				start++;
+				valueA = Integer.parseInt(count.get(start).toString()); //move to the next value in the list for continued comparisons
+			} //end while
+			
+			System.out.println("valueA is apparently not smaller than B. Here's A and B " + valueA + " " + valueB);
+			System.out.println("start and end " + start + " " + end);
+			
+			valueA = Integer.parseInt(count.get(end).toString()); //we're now comparing the last values in the array
+			while (Integer.compare(valueA, valueB) > 0) //while b is less than a
+			{
+				System.out.println(Integer.parseInt(count.get(end).toString()) + " > " + Integer.parseInt(count.get(pivot).toString()));
+				end--;
+				valueA = Integer.parseInt(count.get(end).toString());
+			} //end while
+			
+			System.out.println("start and end " + start + " " + end);
+
+			valueA = Integer.parseInt(count.get(start).toString());
+			valueB = Integer.parseInt(count.get(end).toString());
+			int valueC = Integer.parseInt(count.get(pivot).toString());
+			//swap the values if they're in the wrong position based on relative size
+			if (Integer.compare(valueA, valueB) > 0)
+			{
+				System.out.println("names size " + names.size());
+				for (int i = 0; i < names.size(); i++)
+				{
+					System.out.println(count.get(i).toString());
+				}
+				System.out.println("BEFORE SWAP");
+				swap(start, end, names, count);
+				System.out.println("AFTER SWAP");
+				for (int i = 0; i < names.size(); i++)
+				{
+					System.out.println(count.get(i).toString());
+				}
+				start++;
+				end--;
+			} //end if
+
+			System.out.println("end of loop");
+			for (int i = 0; i < names.size(); i++)
+			{
+				System.out.println(count.get(i).toString());
+			}
+		} //end while
+		end++;
+		
+		valueA = Integer.parseInt(count.get(start).toString());
+		valueB = Integer.parseInt(count.get(end).toString());
+		int valueC = Integer.parseInt(count.get(pivot).toString());
+		
+		System.out.println("Here are start and end and pivot " + valueA + " " + valueB + " " + valueC);
+		
+		//only swap the values if either of them are larger: this is because the list is already split in half
+		//so honestly you only really need to switch the values if valueA is larger than valueC right?
+		//maybe look at this again later.
+	    if (Integer.compare(valueA, valueC) >= 0)
+		{
+			System.out.println("start is greater than pivot " + valueA + " " + valueC);
+			swap(start, pivot, names, count);
+		} //end else if
+		
+		else if (Integer.compare(valueB, valueC) >= 0) //otherwise we're at the end and last is large
+		{
+			System.out.println("end is greater than pivot " + valueB + " " + valueC);
+			swap(end, pivot, names, count);
+		} //end else
+	    
+	    return end;
+	} //end quickSort
+	
+	//method for swapping the values using usual temp value strategy
+	private void swap(int i, int j, List <String>names, List<Integer> count)
+	{
+		System.out.println("swapping these values: " + count.get(i).toString() + " " + count.get(j).toString());
+		
+		int temp = Integer.parseInt(count.get(i).toString()); //hold the values of start during the  swap
+		String tempStr = names.get(i).toString();
+
+		count.set(i, Integer.parseInt(count.get(j).toString()));
+		names.set(i, names.get(j).toString());
+		
+		count.set(j, temp);
+		names.set(j, tempStr);
+	} //end swap
+	
+	private void run()
 	{
 		Map<String, String> map = new HashMap<String, String>();
 		map.put("notes_info", "True");
