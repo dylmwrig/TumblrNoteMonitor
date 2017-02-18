@@ -36,7 +36,11 @@ public class Monitor
 	public static void main(String args[])
 	{
 		//new Monitor().Run();
-		//new Monitor().Test();
+		new Monitor().Test();
+		
+		//used for testing quickSort, when you get back to it
+		
+		/*
 		ArrayList names = new ArrayList();
 		ArrayList count = new ArrayList();
 		names.add("I");
@@ -54,6 +58,20 @@ public class Monitor
 		count.add(19);
 		count.add(8);
 		
+
+		for (int i = 0; i < count.size(); i++)
+		{
+			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
+		} //end for
+		
+		Monitor myTest = new Monitor();
+		myTest.bubbleSort(names, count);
+		for (int i = 0; i < count.size(); i++)
+		{
+			System.out.println("After swap names and count " + names.get(i).toString() + " " + count.get(i).toString());
+		} //end for
+		*/
+		/*	
 		int test = Integer.parseInt(count.get(0).toString());
 		int test2 = Integer.parseInt(count.get(1).toString());
 
@@ -73,6 +91,7 @@ public class Monitor
 		{
 			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
 		} //end for
+		*/
 	} //end main
 	
 	//test stuff here
@@ -149,7 +168,10 @@ public class Monitor
 				{
 					System.out.println(target.get(j));
 				}
-				if (target.size() == 4) //because there is no "reblogged from field" the op has a smaller list
+				
+				//because there is no "reblogged from field" the op has a smaller list
+				//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
+				if (target.size() == 4) 
 				{
 					System.out.println("Original Post");
 				}
@@ -162,7 +184,7 @@ public class Monitor
 					//maybe find some regex operator for this? Idk
 					split = brute.split("://|\\.tumblr"); 
 					
-					String reblogSource = split[1]; //name of person reblogged from
+					String reblogSource = split[1]; //name of person reblogged from, the stuff between http:// and .tumblr
 					ArrayList<String> rebloggedFrom = new ArrayList<String>();
 
 					rebloggedFrom.add(split[1]);
@@ -170,6 +192,7 @@ public class Monitor
 					int reblogCount = 0; //this person was reblogged from at least once
 					boolean append = true; //checks if we need to add the blog name to the end
 					
+					//there is no reason to check the contents of the list if it is empty
 					if (reblogSources.size() == 0) //I wonder if I can just say iter.hasNext here? Does it return false if there's nothing there to begin with?
 					{
 						reblogSources.put(reblogSource, 1); //first item so value is 1
@@ -182,7 +205,10 @@ public class Monitor
 						
 						while (iter.hasNext())
 						{
+							//map is the java equivalent of the python dictionary
 							Map.Entry keyValue = (Map.Entry)iter.next();
+							//if there is another item in the list which is equal to the item we are checking against
+							//iterate the amount of reblogs which it has and break from the loop
 							if (keyValue.getKey().toString().equals(reblogSource))
 							{
 								reblogCount = (int) keyValue.getValue();
@@ -193,7 +219,8 @@ public class Monitor
 								break; //no need to keep checking if it's in there once
 							} //end if
 						} //end while
-	
+						
+						//otherwise, if it was nowhere to be found, add it to the end of the list
 						//add the blog to the end with a value of one if it wasn't in the list
 						if (append)
 						{
@@ -207,6 +234,9 @@ public class Monitor
 					//if the name isn't in the list, add it to the end. If it is, 
 				} //end else
 			} //end for
+			
+			ArrayList <String> names = new ArrayList();
+			ArrayList <Integer> count = new ArrayList();
 
 			//is there a better kind of map to use?
 			Map topSources = new LinkedHashMap(); //holds the sources of reblogs
@@ -218,14 +248,18 @@ public class Monitor
 				while (iter.hasNext())
 				{
 					Map.Entry keyValue = (Map.Entry)iter.next();
-					
-					for (int i = 0; i < reblogSources.size(); i++)
-					{
-						
-					} //end for
+				
+					names.add(keyValue.getKey().toString());
+					count.add(Integer.parseInt(keyValue.getValue().toString()));
 				} //end while
 			} //end if
+			
+			bubbleSort(names, count);
 
+			for (int i = 0; i < count.size(); i++)
+			{
+				System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
+			} //end for
 		} //end try
 		
 		
@@ -239,6 +273,28 @@ public class Monitor
 			client.close();
 		}
 	}
+	
+	//amateurish but ez
+	private void bubbleSort(ArrayList<String> names, ArrayList<Integer> count)
+	{
+		int tempInt = 0;
+		String tempStr = "";
+		for (int i = 0; i < count.size(); i++)
+		{
+			for (int j = 0; j < count.size(); j++)
+			{
+				if (Integer.parseInt(count.get(i).toString()) > Integer.parseInt(count.get(j).toString()))
+				{
+					tempInt = Integer.parseInt(count.get(i).toString());
+					tempStr = names.get(i).toString();
+					count.set(i, Integer.parseInt(count.get(j).toString()));
+					count.set(j, tempInt);
+					names.set(i, names.get(j).toString());
+					names.set(j, tempStr);
+				} //end if
+			} //end for
+		} //end for
+	} //bubbleSort
 	
 	//sort hashmap based on value, descending order
 	//also sort by the amount of reblogs that we're even interested in;
@@ -275,6 +331,7 @@ public class Monitor
 		return toSort;
 	} //end sortSources
 	
+/*
 	//quick sort algorithm to sort both most popular person to reblog from and most popular tag
 	//basically anything in this program which will be fed into a list which will need to be sorted will go through this
 	private void quickSort(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
@@ -286,8 +343,11 @@ public class Monitor
 		
 		int partition;
 		
+		System.out.println("inside quickSort, valueA, valueB: " + valueA + " " + valueB + " "); 
+		
 		pivot = Integer.parseInt(count.get(end).toString());
 		partition = partition(names, count, start, end);
+		System.out.println("partition and pivot: " + pivot + " " + partition);
 		quickSort(names, count, start, partition - 1);
 		quickSort(names, count, partition + 1, end);
 		
@@ -387,7 +447,8 @@ public class Monitor
 		} //end else
 	    
 	    return end;
-	} //end quickSort
+	} //end partition
+*/
 	
 	//method for swapping the values using usual temp value strategy
 	private void swap(int i, int j, List <String>names, List<Integer> count)
