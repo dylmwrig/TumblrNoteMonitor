@@ -3,9 +3,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
@@ -35,14 +37,68 @@ public class Monitor
 	{
 		//new Monitor().Run();
 		new Monitor().Test();
+		
+		//used for testing quickSort, when you get back to it
+		
+		/*
+		ArrayList names = new ArrayList();
+		ArrayList count = new ArrayList();
+		names.add("I");
+		names.add("don't");
+		names.add("wanna");
+		names.add("live");
+		names.add("no");
+		names.add("mo");
+		names.add("sometimes");
+		count.add(11);
+		count.add(10);
+		count.add(4);
+		count.add(2);
+		count.add(5);
+		count.add(19);
+		count.add(8);
+		
+
+		for (int i = 0; i < count.size(); i++)
+		{
+			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
+		} //end for
+		
+		Monitor myTest = new Monitor();
+		myTest.bubbleSort(names, count);
+		for (int i = 0; i < count.size(); i++)
+		{
+			System.out.println("After swap names and count " + names.get(i).toString() + " " + count.get(i).toString());
+		} //end for
+		*/
+		/*	
+		int test = Integer.parseInt(count.get(0).toString());
+		int test2 = Integer.parseInt(count.get(1).toString());
+
+		for (int i = 0; i < count.size(); i++)
+		{
+			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
+		} //end for
+		
+		int start = 0, end = (count.size() - 2);
+		
+		System.out.println("test and test2 " + test + " " + test2);
+		System.out.println(Integer.compare(test, test2));
+		Monitor myTest = new Monitor();
+		myTest.quickSort(names, count, start, end);
+		
+		for (int i = 0; i < count.size(); i++)
+		{
+			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
+		} //end for
+		*/
 	} //end main
 	
 	//test stuff here
 	private void Test()
 	{
-//8
 		List <Post> posts = blog.posts();
-		Post newest = posts.get(3); //put the index of whatever post you want in here
+		Post newest = posts.get(4); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
@@ -55,16 +111,18 @@ public class Monitor
 		try 
 		{
 			final HtmlPage page = client.getPage(url);
-			client.waitForBackgroundJavaScript(3000);
+			client.waitForBackgroundJavaScript(500);
 			System.out.println(page.getTitleText());
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
 			HtmlPage notePage = link.click(); //this is the page you will pull your notes from
-			client.waitForBackgroundJavaScript(3000);
+			client.waitForBackgroundJavaScript(500);
 
 			//while there are more notes buttons to click, keep clicking
 			//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
 			//the program will crash. So put it in a try block
+			//I may try putting all of the "most popular person to reblog from" section into here but the list you
+			//get from this could be valuable for other stuff like most popular tags.
 			boolean keepClicking = true;
 			int clickCount = 0; //keeps track of amount of show more notes, mainly for testing
 			while (keepClicking)
@@ -76,7 +134,7 @@ public class Monitor
 					notePage = showMore.click(); //load the extra notes
 					System.out.println("Clicked " + clickCount + " times");
 					clickCount++;
-					client.waitForBackgroundJavaScript(3000);
+					client.waitForBackgroundJavaScript(500);
 				} //end try
 				
 				catch(Exception e) //make your catches more specific rather than gotta catch em all every time
@@ -86,49 +144,122 @@ public class Monitor
 					keepClicking = false;
 				} //end catch
 			} //end while
-			
-			//DomElement loading = moreNotes.getByXPath("//span[starts-with(@class, 'notes_loading'");
-			
-			//final List<DomElement> spans = page.getElementTagName("span");
-			
-			System.out.println("Second page name : " + notePage.getBaseURL());
-			//DomNodeList noteList = notePage.getElementsByTagName("li");
-			final List<?> noteList = notePage.getByXPath("//li");//[starts-with(@class, 'note')]");
-			System.out.println("Size " + noteList.size());
-			System.out.println("To string " + noteList.get(1).toString());
-			
 		
 			final List<?> reblogs = notePage.getByXPath("//li[starts-with(@class, 'note reblog')]");
 			
 			System.out.println(reblogs.get(10).getClass());
 			//testing
-			for (int i = 0; i < reblogs.size(); i++)
-			{
-				System.out.println("Here's my test at position " + i + " " + reblogs.get(i)); 
-			}
 
-			Iterable<DomElement> test = ((DomElement) reblogs.get(10)).getChildElements();
-			//HtmlListItem noteListItem = reblogs.get(10);
-			//DomNode test = ((DomNode) reblogs.get(10)).getFirstChild();
-			List<DomElement> target = new ArrayList<DomElement>(); //create array list to hold contents of iterable
-			test.forEach(target :: add); //add each iterable to the list
-			test = ((DomElement) target.get(1)).getChildElements();
-			test.forEach(target :: add);
-			for (int i = 0; i < target.size(); i++)
+			//initialize the iterable to the first reblog so that we've initialized it properly
+			Iterable<DomElement> children = ((DomElement) reblogs.get(0)).getChildElements();
+			
+			Map reblogSources = new LinkedHashMap(); //holds the sources of reblogs
+			
+			//store the child elements of each reblog, so we can more easily navigate it and pull most popular
+			//person to reblog from
+			for (int i = 0; i < reblogs.size(); ++i)
 			{
-				System.out.println(target.get(i));
-			}
-			String brute = target.get(4).toString();
-			System.out.println("brute force? " + brute);
-			String[] split = brute.split("/*");
-			System.out.println("split attempt " + Arrays.asList(brute.split("://|\\.")));
-			split = brute.split("://|\\.");
-			//System.out.println("get attribute " + target.get(1).getAttribute("href"));1
-			System.out.println("split [0] " + split[0]);
-			System.out.println("split [1] " + split[1]);
-			System.out.println("split [2] " + split[2]);
-			System.out.println("lets try this " + Arrays.asList(split));
-			System.out.println("whoop whoop " + split[1]);
+				children = ((DomElement) reblogs.get(i)).getChildElements();
+				List<DomElement> target = new ArrayList<DomElement>(); //create array list to hold contents of iterable
+				children.forEach(target :: add); //add each iterable to the list
+				children = ((DomElement) target.get(1)).getChildElements();
+				children.forEach(target :: add);
+				for (int j = 0; j < target.size(); j++)
+				{
+					System.out.println(target.get(j));
+				}
+				
+				//because there is no "reblogged from field" the op has a smaller list
+				//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
+				if (target.size() == 4) 
+				{
+					System.out.println("Original Post");
+				}
+				
+				else
+				{
+					String brute = target.get(4).toString();
+					String[] split = brute.split("/*");
+					//I want to make this http:// just for specificity but this breaks with https://
+					//maybe find some regex operator for this? Idk
+					split = brute.split("://|\\.tumblr"); 
+					
+					String reblogSource = split[1]; //name of person reblogged from, the stuff between http:// and .tumblr
+					ArrayList<String> rebloggedFrom = new ArrayList<String>();
+
+					rebloggedFrom.add(split[1]);
+					
+					int reblogCount = 0; //this person was reblogged from at least once
+					boolean append = true; //checks if we need to add the blog name to the end
+					
+					//there is no reason to check the contents of the list if it is empty
+					if (reblogSources.size() == 0) //I wonder if I can just say iter.hasNext here? Does it return false if there's nothing there to begin with?
+					{
+						reblogSources.put(reblogSource, 1); //first item so value is 1
+					} //end if
+					
+					else
+					{
+						Set set = reblogSources.entrySet(); //what is set?
+						Iterator iter = set.iterator();
+						
+						while (iter.hasNext())
+						{
+							//map is the java equivalent of the python dictionary
+							Map.Entry keyValue = (Map.Entry)iter.next();
+							//if there is another item in the list which is equal to the item we are checking against
+							//iterate the amount of reblogs which it has and break from the loop
+							if (keyValue.getKey().toString().equals(reblogSource))
+							{
+								reblogCount = (int) keyValue.getValue();
+								reblogCount++;
+								keyValue.setValue(reblogCount);
+								append = false;
+								System.out.println(reblogSource + " has " + reblogCount + " reblogs\n\n\n");
+								break; //no need to keep checking if it's in there once
+							} //end if
+						} //end while
+						
+						//otherwise, if it was nowhere to be found, add it to the end of the list
+						//add the blog to the end with a value of one if it wasn't in the list
+						if (append)
+						{
+							reblogSources.put(reblogSource, reblogCount); 
+							System.out.println("Added " + reblogSource + " to the list.\n\n\n");
+						} //end if
+						
+					} //end else
+					
+					//going to store everything in the reblog name array. Also need to do checks
+					//if the name isn't in the list, add it to the end. If it is, 
+				} //end else
+			} //end for
+			
+			ArrayList <String> names = new ArrayList();
+			ArrayList <Integer> count = new ArrayList();
+
+			//is there a better kind of map to use?
+			Map topSources = new LinkedHashMap(); //holds the sources of reblogs
+			if (reblogSources.size() > 0)
+			{
+				Set set = reblogSources.entrySet();
+				Iterator iter = set.iterator();
+				
+				while (iter.hasNext())
+				{
+					Map.Entry keyValue = (Map.Entry)iter.next();
+				
+					names.add(keyValue.getKey().toString());
+					count.add(Integer.parseInt(keyValue.getValue().toString()));
+				} //end while
+			} //end if
+			
+			bubbleSort(names, count);
+
+			for (int i = 0; i < count.size(); i++)
+			{
+				System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
+			} //end for
 		} //end try
 		
 		
@@ -143,7 +274,198 @@ public class Monitor
 		}
 	}
 	
-	private void Run()
+	//amateurish but ez
+	private void bubbleSort(ArrayList<String> names, ArrayList<Integer> count)
+	{
+		int tempInt = 0;
+		String tempStr = "";
+		for (int i = 0; i < count.size(); i++)
+		{
+			for (int j = 0; j < count.size(); j++)
+			{
+				if (Integer.parseInt(count.get(i).toString()) > Integer.parseInt(count.get(j).toString()))
+				{
+					tempInt = Integer.parseInt(count.get(i).toString());
+					tempStr = names.get(i).toString();
+					count.set(i, Integer.parseInt(count.get(j).toString()));
+					count.set(j, tempInt);
+					names.set(i, names.get(j).toString());
+					names.set(j, tempStr);
+				} //end if
+			} //end for
+		} //end for
+	} //bubbleSort
+	
+	//sort hashmap based on value, descending order
+	//also sort by the amount of reblogs that we're even interested in;
+	//if we're interested in storing reblog sources outside of those, we can just make a copy of the hashmap
+	//before calling this and don't modify that. But this is meant to both sort and restrict the number of
+	//values in the hashmap
+	private HashMap sortSources(HashMap toSort, int toSortSize)
+	{
+		//throw exception if wrong size, don't feel like figuring out syntax rn lmao
+		if (toSort.size() < 1)
+		{
+			//throw IllegalArgumentExcpetion;
+		} //end if
+		
+		Set set = toSort.entrySet();
+		Iterator iter = set.iterator();
+		
+		//access each respective list by just using the index in some sort of for loop
+		//so move element at location i in keys if you're moving element in location i in values
+		List keys = new ArrayList();
+		List values = new ArrayList();
+		
+		//add each key and value pairing to their respective arrays from the hashmap
+		while (iter.hasNext())
+		{
+			Map.Entry value = (Map.Entry)iter.next();
+			keys.add(value.getKey().toString());
+			values.add(Integer.parseInt(value.getValue().toString())); //did I just get hacked?
+		} //end while
+		
+		int start = 0, end = (values.size() - 1);
+		//TODO quicksort
+		
+		return toSort;
+	} //end sortSources
+	
+/*
+	//quick sort algorithm to sort both most popular person to reblog from and most popular tag
+	//basically anything in this program which will be fed into a list which will need to be sorted will go through this
+	private void quickSort(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
+	{
+		int pivot = (end + 1), valueA, valueB;
+
+		valueA = Integer.parseInt(count.get(start).toString()); //jesus just accessing these values is a pain.
+		valueB = Integer.parseInt(count.get(pivot).toString()); //compare pivot and start values first
+		
+		int partition;
+		
+		System.out.println("inside quickSort, valueA, valueB: " + valueA + " " + valueB + " "); 
+		
+		pivot = Integer.parseInt(count.get(end).toString());
+		partition = partition(names, count, start, end);
+		System.out.println("partition and pivot: " + pivot + " " + partition);
+		quickSort(names, count, start, partition - 1);
+		quickSort(names, count, partition + 1, end);
+		
+	} //end quickSort
+	
+	//preliminary 
+	private int partition(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
+	{
+		System.out.println(Integer.parseInt(count.get(0).toString()) + 2);
+		System.out.println(names.get(0));
+		
+		//index locations we're checking each time
+		int pivot = (end + 1), valueA, valueB;
+		boolean keepGoing = true;
+
+		System.out.println("HERE IS END AND PIVOT " + end + " " + pivot);
+		
+		//should this be strictly lesser than or <=?
+		while (start < end)
+		{
+			System.out.println("start of loop: start and end " + start + " " + end);
+			
+			valueA = Integer.parseInt(count.get(start).toString()); //jesus just accessing these values is a pain.
+			valueB = Integer.parseInt(count.get(pivot).toString()); //compare pivot and start values first
+			
+			//while the values on the left are smaller than the pivot, access the next element.
+			//same goes for larger values, just access the previous element
+			while (Integer.compare(valueA, valueB) < 0) //while a is less than b
+			{
+				System.out.println(Integer.parseInt(count.get(start).toString()) + " > " + Integer.parseInt(count.get(pivot).toString()));
+				start++;
+				valueA = Integer.parseInt(count.get(start).toString()); //move to the next value in the list for continued comparisons
+			} //end while
+			
+			System.out.println("valueA is apparently not smaller than B. Here's A and B " + valueA + " " + valueB);
+			System.out.println("start and end " + start + " " + end);
+			
+			valueA = Integer.parseInt(count.get(end).toString()); //we're now comparing the last values in the array
+			while (Integer.compare(valueA, valueB) > 0) //while b is less than a
+			{
+				System.out.println(Integer.parseInt(count.get(end).toString()) + " > " + Integer.parseInt(count.get(pivot).toString()));
+				end--;
+				valueA = Integer.parseInt(count.get(end).toString());
+			} //end while
+			
+			System.out.println("start and end " + start + " " + end);
+
+			valueA = Integer.parseInt(count.get(start).toString());
+			valueB = Integer.parseInt(count.get(end).toString());
+			int valueC = Integer.parseInt(count.get(pivot).toString());
+			//swap the values if they're in the wrong position based on relative size
+			if (Integer.compare(valueA, valueB) > 0)
+			{
+				System.out.println("names size " + names.size());
+				for (int i = 0; i < names.size(); i++)
+				{
+					System.out.println(count.get(i).toString());
+				}
+				System.out.println("BEFORE SWAP");
+				swap(start, end, names, count);
+				System.out.println("AFTER SWAP");
+				for (int i = 0; i < names.size(); i++)
+				{
+					System.out.println(count.get(i).toString());
+				}
+				start++;
+				end--;
+			} //end if
+
+			System.out.println("end of loop");
+			for (int i = 0; i < names.size(); i++)
+			{
+				System.out.println(count.get(i).toString());
+			}
+		} //end while
+		end++;
+		
+		valueA = Integer.parseInt(count.get(start).toString());
+		valueB = Integer.parseInt(count.get(end).toString());
+		int valueC = Integer.parseInt(count.get(pivot).toString());
+		
+		System.out.println("Here are start and end and pivot " + valueA + " " + valueB + " " + valueC);
+		
+		//only swap the values if either of them are larger: this is because the list is already split in half
+		//so honestly you only really need to switch the values if valueA is larger than valueC right?
+		//maybe look at this again later.
+	    if (Integer.compare(valueA, valueC) >= 0)
+		{
+			System.out.println("start is greater than pivot " + valueA + " " + valueC);
+			swap(start, pivot, names, count);
+		} //end else if
+		
+		else if (Integer.compare(valueB, valueC) >= 0) //otherwise we're at the end and last is large
+		{
+			System.out.println("end is greater than pivot " + valueB + " " + valueC);
+			swap(end, pivot, names, count);
+		} //end else
+	    
+	    return end;
+	} //end partition
+*/
+	
+	//method for swapping the values using usual temp value strategy
+	private void swap(int i, int j, List <String>names, List<Integer> count)
+	{
+		System.out.println("swapping these values: " + count.get(i).toString() + " " + count.get(j).toString());
+		
+		int temp = Integer.parseInt(count.get(i).toString()); //hold the values of start during the  swap
+		String tempStr = names.get(i).toString();
+
+		count.set(i, Integer.parseInt(count.get(j).toString()));
+		names.set(i, names.get(j).toString());
+		
+		count.set(j, temp);
+		names.set(j, tempStr);
+	} //end swap
+	
+	private void run()
 	{
 		Map<String, String> map = new HashMap<String, String>();
 		map.put("notes_info", "True");
