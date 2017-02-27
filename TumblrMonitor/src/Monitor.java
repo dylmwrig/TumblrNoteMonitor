@@ -1,19 +1,13 @@
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
@@ -171,6 +165,9 @@ public class Monitor
 			Blog reblogger; //blog who reblogged the post
 			Post reblog; //reblog itself
 			
+			//hold the amount of reblogs between certain times, also the variable which will hold the hour of the reblog
+			int zeroToSix = 0, sixToNoon = 0, noonToSix = 0, sixToMidnight = 0, hour = 0; 
+			
 			//store the child elements of each reblog, so we can more easily navigate it and pull most popular
 			//person to reblog from
 			for (int i = 0; i < reblogs.size(); ++i)
@@ -214,9 +211,9 @@ public class Monitor
 				System.out.println("source title of reblog: " + reblog.getBlogName());
 				System.out.println("timestamp: " + reblog.getTimestamp());
 				
-				//"EST" is supported by DateTimeZone, just tested it
-				DateTimeZone timeZone = DateTimeZone.forID("EST");
-				
+				//timestamp is returned as long, representing milliseconds since epoch
+				//multiply by 1000 and set the eastern time zone. The result is a date you can get different info from
+				DateTimeZone timeZone = DateTimeZone.forID("EST"); //"EST" is supported by DateTimeZone, just tested it
 				DateTime dateTime = new DateTime((reblog.getTimestamp() * 1000), timeZone);
 				
 				//dateTime = dateTime.plus(reblog.getTimestamp());
@@ -224,6 +221,27 @@ public class Monitor
 				System.out.println("getDayOfMonth: " + dateTime.getDayOfMonth());
 				System.out.println("getMonth: " + dateTime.getMonthOfYear());
 				System.out.println("getYear: " + dateTime.getYear());
+				
+				hour = dateTime.getHourOfDay();
+				if (hour < 6)
+				{
+					zeroToSix++;
+				} //end if
+				
+				else if (hour < 12)
+				{
+					sixToNoon++;
+				} //end else if
+
+				else if (hour < 18)
+				{
+					noonToSix++;
+				} //end else if
+				
+				else
+				{
+					sixToMidnight++;
+				} //end else
 				//because there is no "reblogged from field" the op has a smaller list
 				//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
 				if (target.size() == 4) 
@@ -314,6 +332,8 @@ public class Monitor
 			{
 				System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
 			} //end for
+			
+			System.out.println("0-6, 6-12, 12-18, 18-24: " + zeroToSix + " " + sixToNoon + " " + noonToSix + " " + sixToMidnight);
 		} //end try
 		
 		
