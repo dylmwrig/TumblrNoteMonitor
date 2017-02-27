@@ -1,13 +1,19 @@
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
@@ -15,14 +21,17 @@ import com.gargoylesoftware.htmlunit.html.*; //way too many elements to do it in
 import com.gargoylesoftware.htmlunit.javascript.host.dom.Node;
 import com.gargoylesoftware.htmlunit.javascript.host.html.HTMLElement;
 import com.tumblr.jumblr.*;
-import com.tumblr.jumblr.types.*; 
+import com.tumblr.jumblr.types.*;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 public class Monitor 
 {
-	private JumblrClient client = new JumblrClient(
+	private JumblrClient tumblrClient = new JumblrClient(
 			"xmHAWsN1lRng5IOyxMBijxmNtrwdAE9VCSqfcITBnxi0BitvOc",
 			"V91snqcARLP1XznQt7vc4nsLtcQZzoK5r3Rtgr7DvTULkDxiHT");
-	private Blog blog = client.blogInfo("thelotusmaiden.tumblr.com");
+	private Blog blog = tumblrClient.blogInfo("thelotusmaiden.tumblr.com");
 	
 
 	private Monitor()
@@ -98,25 +107,25 @@ public class Monitor
 	private void Test()
 	{
 		List <Post> posts = blog.posts();
-		Post newest = posts.get(4); //put the index of whatever post you want in here
+		Post newest = posts.get(0); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
-		final WebClient client = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
-		client.getOptions().setThrowExceptionOnFailingStatusCode(false);
-		client.getOptions().setThrowExceptionOnScriptError(false);
+		final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
+		webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+		webClient.getOptions().setThrowExceptionOnScriptError(false);
 		//String url = "http://thelotusmaiden.tumblr.com/post/155180649080/thelotusmaiden-late-night-shopping-high-res";
 		String url = "http://thelotusmaiden.tumblr.com";
 		
 		try 
 		{
-			final HtmlPage page = client.getPage(url);
-			client.waitForBackgroundJavaScript(500);
+			final HtmlPage page = webClient.getPage(url);
+			webClient.waitForBackgroundJavaScript(500);
 			System.out.println(page.getTitleText());
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
 			HtmlPage notePage = link.click(); //this is the page you will pull your notes from
-			client.waitForBackgroundJavaScript(500);
+			webClient.waitForBackgroundJavaScript(500);
 
 			//while there are more notes buttons to click, keep clicking
 			//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
@@ -134,7 +143,7 @@ public class Monitor
 					notePage = showMore.click(); //load the extra notes
 					System.out.println("Clicked " + clickCount + " times");
 					clickCount++;
-					client.waitForBackgroundJavaScript(500);
+					webClient.waitForBackgroundJavaScript(500);
 				} //end try
 				
 				catch(Exception e) //make your catches more specific rather than gotta catch em all every time
@@ -154,6 +163,13 @@ public class Monitor
 			Iterable<DomElement> children = ((DomElement) reblogs.get(0)).getChildElements();
 			
 			Map reblogSources = new LinkedHashMap(); //holds the sources of reblogs
+
+			String reblogURL, reblogID;
+			
+			long reblogLong; //convert reblogID to a usable type
+			
+			Blog reblogger; //blog who reblogged the post
+			Post reblog; //reblog itself
 			
 			//store the child elements of each reblog, so we can more easily navigate it and pull most popular
 			//person to reblog from
@@ -164,11 +180,50 @@ public class Monitor
 				children.forEach(target :: add); //add each iterable to the list
 				children = ((DomElement) target.get(1)).getChildElements();
 				children.forEach(target :: add);
+				
+				
 				for (int j = 0; j < target.size(); j++)
 				{
-					System.out.println(target.get(j));
+					System.out.println("This is target: " + target.get(j));
 				}
 				
+				reblogURL = target.get(1).toString();
+				
+				System.out.println("ReblogURL at first assignment: " + reblogURL);
+				
+				String[] reblogSplit;
+				reblogSplit = reblogURL.split("post/|\"");
+				
+				reblogID = reblogSplit[4]; //current location of the reblog's id; this seems unreliable but should work for now
+				
+				for (int j = 0; j < reblogSplit.length; j++)
+				{
+					System.out.println("j " + j + " , " + reblogSplit[j]);
+				}
+				
+				System.out.println("URL of the reblog: " + reblogURL);
+				
+				reblogLong = Long.valueOf(reblogID).longValue();
+				
+				reblogSplit = reblogSplit[3].split("://|/"); //remove the "http://" from the blog name so it can be fed into tumblrClient
+				
+				reblogURL = reblogSplit[1];
+
+				reblogger = tumblrClient.blogInfo(reblogURL);
+				reblog = reblogger.getPost(reblogLong); //get the reblog by post ID
+				System.out.println("source title of reblog: " + reblog.getBlogName());
+				System.out.println("timestamp: " + reblog.getTimestamp());
+				
+				//"EST" is supported by DateTimeZone, just tested it
+				DateTimeZone timeZone = DateTimeZone.forID("EST");
+				
+				DateTime dateTime = new DateTime((reblog.getTimestamp() * 1000), timeZone);
+				
+				//dateTime = dateTime.plus(reblog.getTimestamp());
+				System.out.println("getHourOfDay: " + dateTime.getHourOfDay());
+				System.out.println("getDayOfMonth: " + dateTime.getDayOfMonth());
+				System.out.println("getMonth: " + dateTime.getMonthOfYear());
+				System.out.println("getYear: " + dateTime.getYear());
 				//because there is no "reblogged from field" the op has a smaller list
 				//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
 				if (target.size() == 4) 
@@ -189,7 +244,7 @@ public class Monitor
 
 					rebloggedFrom.add(split[1]);
 					
-					int reblogCount = 0; //this person was reblogged from at least once
+					int reblogCount = 1; //this person was reblogged from at least once
 					boolean append = true; //checks if we need to add the blog name to the end
 					
 					//there is no reason to check the contents of the list if it is empty
@@ -227,7 +282,6 @@ public class Monitor
 							reblogSources.put(reblogSource, reblogCount); 
 							System.out.println("Added " + reblogSource + " to the list.\n\n\n");
 						} //end if
-						
 					} //end else
 					
 					//going to store everything in the reblog name array. Also need to do checks
@@ -266,13 +320,13 @@ public class Monitor
 		catch (Exception e)
 		{
 			e.printStackTrace();
-		}	
+		} //end catch
 		
 		finally
 		{
-			client.close();
-		}
-	}
+			webClient.close();
+		} //end finally
+	} //end Test
 	
 	//amateurish but ez
 	private void bubbleSort(ArrayList<String> names, ArrayList<Integer> count)
@@ -536,7 +590,7 @@ public class Monitor
 				
 				if (checkURL(reblogString))
 				{
-					reblogger = client.blogInfo(reblogString);
+					reblogger = tumblrClient.blogInfo(reblogString);
 					reblogID = notes.get(i).getPostId();
 					reblog = reblogger.getPost(reblogID);
 					allTags.addAll(reblog.getTags());
