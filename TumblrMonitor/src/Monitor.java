@@ -101,7 +101,7 @@ public class Monitor
 	private void Test()
 	{
 		List <Post> posts = blog.posts();
-		Post newest = posts.get(0); //put the index of whatever post you want in here
+		Post newest = posts.get(6); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
@@ -206,105 +206,109 @@ public class Monitor
 				
 				reblogURL = reblogSplit[1];
 
-				reblogger = tumblrClient.blogInfo(reblogURL);
-				reblog = reblogger.getPost(reblogLong); //get the reblog by post ID
-				System.out.println("source title of reblog: " + reblog.getBlogName());
-				System.out.println("timestamp: " + reblog.getTimestamp());
-				
-				//timestamp is returned as long, representing milliseconds since epoch
-				//multiply by 1000 and set the eastern time zone. The result is a date you can get different info from
-				DateTimeZone timeZone = DateTimeZone.forID("EST"); //"EST" is supported by DateTimeZone, just tested it
-				DateTime dateTime = new DateTime((reblog.getTimestamp() * 1000), timeZone);
-				
-				//dateTime = dateTime.plus(reblog.getTimestamp());
-				System.out.println("getHourOfDay: " + dateTime.getHourOfDay());
-				System.out.println("getDayOfMonth: " + dateTime.getDayOfMonth());
-				System.out.println("getMonth: " + dateTime.getMonthOfYear());
-				System.out.println("getYear: " + dateTime.getYear());
-				
-				hour = dateTime.getHourOfDay();
-				if (hour < 6)
+				if (checkURL(reblogURL))
 				{
-					zeroToSix++;
-				} //end if
-				
-				else if (hour < 12)
-				{
-					sixToNoon++;
-				} //end else if
-
-				else if (hour < 18)
-				{
-					noonToSix++;
-				} //end else if
-				
-				else
-				{
-					sixToMidnight++;
-				} //end else
-				//because there is no "reblogged from field" the op has a smaller list
-				//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
-				if (target.size() == 4) 
-				{
-					System.out.println("Original Post");
-				}
-				
-				else
-				{
-					String brute = target.get(4).toString();
-					String[] split = brute.split("/*");
-					//I want to make this http:// just for specificity but this breaks with https://
-					//maybe find some regex operator for this? Idk
-					split = brute.split("://|\\.tumblr"); 
+					reblogger = tumblrClient.blogInfo(reblogURL);
+					reblog = reblogger.getPost(reblogLong); //get the reblog by post ID
+					System.out.println("source title of reblog: " + reblog.getBlogName());
+					System.out.println("timestamp: " + reblog.getTimestamp());
 					
-					String reblogSource = split[1]; //name of person reblogged from, the stuff between http:// and .tumblr
-					ArrayList<String> rebloggedFrom = new ArrayList<String>();
-
-					rebloggedFrom.add(split[1]);
+					//timestamp is returned as long, representing milliseconds since epoch
+					//multiply by 1000 and set the eastern time zone. The result is a date you can get different info from
+					DateTimeZone timeZone = DateTimeZone.forID("EST"); //"EST" is supported by DateTimeZone, just tested it
+					DateTime dateTime = new DateTime((reblog.getTimestamp() * 1000), timeZone);
 					
-					int reblogCount = 1; //this person was reblogged from at least once
-					boolean append = true; //checks if we need to add the blog name to the end
+					//dateTime = dateTime.plus(reblog.getTimestamp());
+					System.out.println("getHourOfDay: " + dateTime.getHourOfDay());
+					System.out.println("getDayOfMonth: " + dateTime.getDayOfMonth());
+					System.out.println("getMonth: " + dateTime.getMonthOfYear());
+					System.out.println("getYear: " + dateTime.getYear());
 					
-					//there is no reason to check the contents of the list if it is empty
-					if (reblogSources.size() == 0) //I wonder if I can just say iter.hasNext here? Does it return false if there's nothing there to begin with?
+					hour = dateTime.getHourOfDay();
+					if (hour < 6)
 					{
-						reblogSources.put(reblogSource, 1); //first item so value is 1
+						zeroToSix++;
 					} //end if
+					
+					else if (hour < 12)
+					{
+						sixToNoon++;
+					} //end else if
+	
+					else if (hour < 18)
+					{
+						noonToSix++;
+					} //end else if
 					
 					else
 					{
-						Set set = reblogSources.entrySet(); //what is set?
-						Iterator iter = set.iterator();
-						
-						while (iter.hasNext())
-						{
-							//map is the java equivalent of the python dictionary
-							Map.Entry keyValue = (Map.Entry)iter.next();
-							//if there is another item in the list which is equal to the item we are checking against
-							//iterate the amount of reblogs which it has and break from the loop
-							if (keyValue.getKey().toString().equals(reblogSource))
-							{
-								reblogCount = (int) keyValue.getValue();
-								reblogCount++;
-								keyValue.setValue(reblogCount);
-								append = false;
-								System.out.println(reblogSource + " has " + reblogCount + " reblogs\n\n\n");
-								break; //no need to keep checking if it's in there once
-							} //end if
-						} //end while
-						
-						//otherwise, if it was nowhere to be found, add it to the end of the list
-						//add the blog to the end with a value of one if it wasn't in the list
-						if (append)
-						{
-							reblogSources.put(reblogSource, reblogCount); 
-							System.out.println("Added " + reblogSource + " to the list.\n\n\n");
-						} //end if
+						sixToMidnight++;
 					} //end else
 					
-					//going to store everything in the reblog name array. Also need to do checks
-					//if the name isn't in the list, add it to the end. If it is, 
-				} //end else
+					//because there is no "reblogged from field" the op has a smaller list
+					//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
+					if (target.size() == 4) 
+					{
+						System.out.println("Original Post");
+					}
+					
+					else
+					{
+						String brute = target.get(4).toString();
+						String[] split = brute.split("/*");
+						//I want to make this http:// just for specificity but this breaks with https://
+						//maybe find some regex operator for this? Idk
+						split = brute.split("://|\\.tumblr"); 
+						
+						String reblogSource = split[1]; //name of person reblogged from, the stuff between http:// and .tumblr
+						ArrayList<String> rebloggedFrom = new ArrayList<String>();
+	
+						rebloggedFrom.add(split[1]);
+						
+						int reblogCount = 1; //this person was reblogged from at least once
+						boolean append = true; //checks if we need to add the blog name to the end
+						
+						//there is no reason to check the contents of the list if it is empty
+						if (reblogSources.size() == 0) //I wonder if I can just say iter.hasNext here? Does it return false if there's nothing there to begin with?
+						{
+							reblogSources.put(reblogSource, 1); //first item so value is 1
+						} //end if
+						
+						else
+						{
+							Set set = reblogSources.entrySet(); //what is set?
+							Iterator iter = set.iterator();
+							
+							while (iter.hasNext())
+							{
+								//map is the java equivalent of the python dictionary
+								Map.Entry keyValue = (Map.Entry)iter.next();
+								//if there is another item in the list which is equal to the item we are checking against
+								//iterate the amount of reblogs which it has and break from the loop
+								if (keyValue.getKey().toString().equals(reblogSource))
+								{
+									reblogCount = (int) keyValue.getValue();
+									reblogCount++;
+									keyValue.setValue(reblogCount);
+									append = false;
+									System.out.println(reblogSource + " has " + reblogCount + " reblogs\n\n\n");
+									break; //no need to keep checking if it's in there once
+								} //end if
+							} //end while
+							
+							//otherwise, if it was nowhere to be found, add it to the end of the list
+							//add the blog to the end with a value of one if it wasn't in the list
+							if (append)
+							{
+								reblogSources.put(reblogSource, reblogCount); 
+								System.out.println("Added " + reblogSource + " to the list.\n\n\n");
+							} //end if
+						} //end else
+						
+						//going to store everything in the reblog name array. Also need to do checks
+						//if the name isn't in the list, add it to the end. If it is, 
+					} //end else
+				} //end if
 			} //end for
 			
 			ArrayList <String> names = new ArrayList();
@@ -669,6 +673,8 @@ public class Monitor
 		
 		try
 		{
+			System.out.println("within checkURL");
+			System.out.println("URL we're trying to check: " + url);
 			URL testURL = new URL(url);
 			HttpURLConnection con = (HttpURLConnection) testURL.openConnection();
 
@@ -677,13 +683,14 @@ public class Monitor
 			//I'm just doing this as a placeholder, really. I should probably just be checking that the response code starts with 2
 			if ((299 < response) && (response < 400))
 			{
+				System.out.println(url + " failed the url check");
 				result = false;
 			} //end if
 			
 			else
 			{
-				result = true;
-			} //end else
+				System.out.println(url + " passed the url check");
+			}
 		} //end try
 		
 		catch (Exception e)
