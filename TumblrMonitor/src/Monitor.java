@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -25,8 +26,10 @@ public class Monitor
 	private JumblrClient tumblrClient = new JumblrClient(
 			"xmHAWsN1lRng5IOyxMBijxmNtrwdAE9VCSqfcITBnxi0BitvOc",
 			"V91snqcARLP1XznQt7vc4nsLtcQZzoK5r3Rtgr7DvTULkDxiHT");
-	private Blog blog = tumblrClient.blogInfo("thelotusmaiden.tumblr.com");
-	
+	private Blog masterBlog = tumblrClient.blogInfo("thelotusmaiden.tumblr.com");
+
+	//no reason to not make the web client global imo
+	final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
 
 	private Monitor()
 	{
@@ -100,15 +103,13 @@ public class Monitor
 	//test stuff here
 	private void Test()
 	{
-		List <Post> posts = blog.posts();
-		Post newest = posts.get(0); //put the index of whatever post you want in here
+		List <Post> posts = masterBlog.posts();
+		Post newest = posts.get(6); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
-		final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
 		webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
 		webClient.getOptions().setThrowExceptionOnScriptError(false);
-		//String url = "http://thelotusmaiden.tumblr.com/post/155180649080/thelotusmaiden-late-night-shopping-high-res";
 		String url = "http://thelotusmaiden.tumblr.com";
 		
 		try 
@@ -118,41 +119,9 @@ public class Monitor
 			System.out.println(page.getTitleText());
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
-			HtmlPage notePage = link.click(); //this is the page you will pull your notes from
-			webClient.waitForBackgroundJavaScript(500);
-
-			//while there are more notes buttons to click, keep clicking
-			//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
-			//the program will crash. So put it in a try block
-			//I may try putting all of the "most popular person to reblog from" section into here but the list you
-			//get from this could be valuable for other stuff like most popular tags.
-			boolean keepClicking = true;
-			int clickCount = 0; //keeps track of amount of show more notes, mainly for testing
-			while (keepClicking)
-			{
-				try
-				{
-					System.out.println("Page name: " + notePage.getBaseURL());
-					HtmlAnchor showMore = notePage.getAnchorByText("Show more notes");
-					notePage = showMore.click(); //load the extra notes
-					System.out.println("Clicked " + clickCount + " times");
-					clickCount++;
-					webClient.waitForBackgroundJavaScript(500);
-				} //end try
-				
-				catch(Exception e) //make your catches more specific rather than gotta catch em all every time
-				{
-					System.out.println("No more notes to display.");
-					System.out.println("Clicked show more " + clickCount + " times.");
-					keepClicking = false;
-				} //end catch
-			} //end while
-		
-			final List<?> reblogs = notePage.getByXPath("//li[starts-with(@class, 'note reblog')]");
+			final List<?> reblogs = getAllNotes(link); 
+			System.out.println("type of reblogs: " + reblogs.get(0).getClass().getName());
 			
-			System.out.println(reblogs.get(10).getClass());
-			//testing
-
 			//initialize the iterable to the first reblog so that we've initialized it properly
 			Iterable<DomElement> children = ((DomElement) reblogs.get(0)).getChildElements();
 			
@@ -206,6 +175,14 @@ public class Monitor
 				
 				reblogURL = reblogSplit[1];
 
+				System.out.println("reblogUrl after reblogSplit[1]: " + reblogURL);
+				
+				//if the url redirects or is otherwise invalid, just skip the rest of the loop
+				if (!checkURL(reblogURL))
+				{
+					continue;
+				} //end if
+				
 				reblogger = tumblrClient.blogInfo(reblogURL);
 				reblog = reblogger.getPost(reblogLong); //get the reblog by post ID
 				System.out.println("source title of reblog: " + reblog.getBlogName());
@@ -301,9 +278,6 @@ public class Monitor
 							System.out.println("Added " + reblogSource + " to the list.\n\n\n");
 						} //end if
 					} //end else
-					
-					//going to store everything in the reblog name array. Also need to do checks
-					//if the name isn't in the list, add it to the end. If it is, 
 				} //end else
 			} //end for
 			
@@ -346,6 +320,7 @@ public class Monitor
 		{
 			webClient.close();
 		} //end finally
+		
 	} //end Test
 	
 	//amateurish but ez
@@ -543,10 +518,10 @@ public class Monitor
 	{
 		Map<String, String> map = new HashMap<String, String>();
 		map.put("notes_info", "True");
-		List <Post> posts = blog.posts(map);
+		List <Post> posts = masterBlog.posts(map);
 		//Post newest = posts.get(4); //put the index of whatever post you want in here
 		
-		Post newest = blog.getPost(154931927092L);
+		Post newest = masterBlog.getPost(154931927092L);
 		List <LinkedHashMap> popularTags = filterTags(newest);
 		//System.out.println(popularTags.get(0).get("a"));
 		
@@ -580,6 +555,45 @@ public class Monitor
 		
 */
 	} //end Run
+	
+	//I'd like to cast the return of this to the type you're using anyway
+	//which is HtmlListItem
+	//however, looking at the conversion, the type returned from 
+	//notePage.getByXPath is really strange so I'd rather not risk it
+	private final List<?> getAllNotes(HtmlAnchor link) throws IOException
+	{
+		HtmlPage notePage = link.click(); //this is the page you will pull your notes from
+		webClient.waitForBackgroundJavaScript(500);
+
+		//while there are more notes buttons to click, keep clicking
+		//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
+		//the program will crash. So put it in a try block
+		//I may try putting all of the "most popular person to reblog from" section into here but the list you
+		//get from this could be valuable for other stuff like most popular tags.
+		boolean keepClicking = true;
+		int clickCount = 0; //keeps track of amount of show more notes, mainly for testing
+		while (keepClicking)
+		{
+			try
+			{
+				System.out.println("Page name: " + notePage.getBaseURL());
+				HtmlAnchor showMore = notePage.getAnchorByText("Show more notes");
+				notePage = showMore.click(); //load the extra notes
+				System.out.println("Clicked " + clickCount + " times");
+				clickCount++;
+				webClient.waitForBackgroundJavaScript(500);
+			} //end try
+			
+			catch(Exception e) //make your catches more specific rather than gotta catch em all every time
+			{
+				System.out.println("No more notes to display.");
+				System.out.println("Clicked show more " + clickCount + " times.");
+				keepClicking = false;
+			} //end catch
+		} //end while
+	
+		return notePage.getByXPath("//li[starts-with(@class, 'note reblog')]");
+	} //end getAllNotes
 	
 	private List <LinkedHashMap> filterTags(Post newest)
 	{
@@ -662,8 +676,6 @@ public class Monitor
 	//the point of the program. But I don't know a workaround for this mostly undocumented problem.
 	private boolean checkURL(String url)
 	{
-		boolean result = true;
-	
 		//in the filterTags function, I remove the http:// and the end / because that's the format required by jumblr, so just add it back in
 		url = "http://" + url + "/";
 		
@@ -677,21 +689,19 @@ public class Monitor
 			//I'm just doing this as a placeholder, really. I should probably just be checking that the response code starts with 2
 			if ((299 < response) && (response < 400))
 			{
-				result = false;
+				return false;
 			} //end if
 			
 			else
 			{
-				result = true;
+				return true;
 			} //end else
 		} //end try
 		
 		catch (Exception e)
 		{
 			System.out.println("There was an error checking the url.");
-			result = false;
+			return false;
 		} //end catch
-		
-		return result;
 	} //end checkURL
 } //end Monitor
