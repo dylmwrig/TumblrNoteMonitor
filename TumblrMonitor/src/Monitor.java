@@ -9,8 +9,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
 import com.gargoylesoftware.htmlunit.html.*; //way too many elements to do it individualy lol
 import com.gargoylesoftware.htmlunit.javascript.host.dom.Node;
@@ -36,80 +38,36 @@ public class Monitor
 		
 	} //end Constructor
 	
-	//because I'm getting more into java, I'm trying to handle main in a more java way
-	//found this on stackexchange: make main simply call monitor, which will parse input
-	//create objects and the other program startup stuff
 	public static void main(String args[])
-	{
-		//new Monitor().Run();
-		new Monitor().Test();
-		
-		//used for testing quickSort, when you get back to it
-		
-		/*
-		ArrayList names = new ArrayList();
-		ArrayList count = new ArrayList();
-		names.add("I");
-		names.add("don't");
-		names.add("wanna");
-		names.add("live");
-		names.add("no");
-		names.add("mo");
-		names.add("sometimes");
-		count.add(11);
-		count.add(10);
-		count.add(4);
-		count.add(2);
-		count.add(5);
-		count.add(19);
-		count.add(8);
-		
-
-		for (int i = 0; i < count.size(); i++)
+	{	
+		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
+/*
+		if (new Monitor().visitAttempt("nakkilapsi.tumblr.com"))
 		{
-			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
-		} //end for
+			System.out.println("url is cool");
+		}
 		
-		Monitor myTest = new Monitor();
-		myTest.bubbleSort(names, count);
-		for (int i = 0; i < count.size(); i++)
+		else
 		{
-			System.out.println("After swap names and count " + names.get(i).toString() + " " + count.get(i).toString());
-		} //end for
-		*/
-		/*	
-		int test = Integer.parseInt(count.get(0).toString());
-		int test2 = Integer.parseInt(count.get(1).toString());
-
-		for (int i = 0; i < count.size(); i++)
-		{
-			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
-		} //end for
-		
-		int start = 0, end = (count.size() - 2);
-		
-		System.out.println("test and test2 " + test + " " + test2);
-		System.out.println(Integer.compare(test, test2));
-		Monitor myTest = new Monitor();
-		myTest.quickSort(names, count, start, end);
-		
-		for (int i = 0; i < count.size(); i++)
-		{
-			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
-		} //end for
-		*/
+			System.out.println("nah it's bad");
+		}
+*/
+		new Monitor().scan();
 	} //end main
 	
-	//test stuff here
-	private void Test()
+	//generic "do stuff" method that I'll refactor after implementation 
+	private void scan()
 	{
 		List <Post> posts = masterBlog.posts();
 		Post newest = posts.get(6); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
-		webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-		webClient.getOptions().setThrowExceptionOnScriptError(false);
+		//webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+		//webClient.getOptions().setThrowExceptionOnScriptError(false);
+		
+		//java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
+		
 		String url = "http://thelotusmaiden.tumblr.com";
 		
 		try 
@@ -131,10 +89,10 @@ public class Monitor
 			
 			long reblogLong; //convert reblogID to a usable type
 			
-			Blog reblogger; //blog who reblogged the post
-			Post reblog; //reblog itself
+			Blog reblogger;  //blog who reblogged the post
+			Post reblog; 
 			
-			//hold the amount of reblogs between certain times, also the variable which will hold the hour of the reblog
+			//hold the amount of reblogs between certain times
 			int zeroToSix = 0, sixToNoon = 0, noonToSix = 0, sixToMidnight = 0, hour = 0; 
 			
 			//store the child elements of each reblog, so we can more easily navigate it and pull most popular
@@ -143,7 +101,7 @@ public class Monitor
 			{
 				children = ((DomElement) reblogs.get(i)).getChildElements();
 				List<DomElement> target = new ArrayList<DomElement>(); //create array list to hold contents of iterable
-				children.forEach(target :: add); //add each iterable to the list
+				children.forEach(target :: add); 					   //add each iterable to the list
 				children = ((DomElement) target.get(1)).getChildElements();
 				children.forEach(target :: add);
 				
@@ -178,7 +136,7 @@ public class Monitor
 				System.out.println("reblogUrl after reblogSplit[1]: " + reblogURL);
 				
 				//if the url redirects or is otherwise invalid, just skip the rest of the loop
-				if (!checkURL(reblogURL))
+				if (!checkURL(reblogURL) || !visitAttempt(reblogURL))
 				{
 					continue;
 				} //end if
@@ -190,7 +148,8 @@ public class Monitor
 				
 				//timestamp is returned as long, representing milliseconds since epoch
 				//multiply by 1000 and set the eastern time zone. The result is a date you can get different info from
-				DateTimeZone timeZone = DateTimeZone.forID("EST"); //"EST" is supported by DateTimeZone, just tested it
+				//"EST" is supported by DateTimeZone, just tested it
+				DateTimeZone timeZone = DateTimeZone.forID("EST"); 
 				DateTime dateTime = new DateTime((reblog.getTimestamp() * 1000), timeZone);
 				
 				//dateTime = dateTime.plus(reblog.getTimestamp());
@@ -320,10 +279,9 @@ public class Monitor
 		{
 			webClient.close();
 		} //end finally
-		
 	} //end Test
 	
-	//amateurish but ez
+	//classic bubble sort
 	private void bubbleSort(ArrayList<String> names, ArrayList<Integer> count)
 	{
 		int tempInt = 0;
@@ -379,125 +337,6 @@ public class Monitor
 		
 		return toSort;
 	} //end sortSources
-	
-/*
-	//quick sort algorithm to sort both most popular person to reblog from and most popular tag
-	//basically anything in this program which will be fed into a list which will need to be sorted will go through this
-	private void quickSort(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
-	{
-		int pivot = (end + 1), valueA, valueB;
-
-		valueA = Integer.parseInt(count.get(start).toString()); //jesus just accessing these values is a pain.
-		valueB = Integer.parseInt(count.get(pivot).toString()); //compare pivot and start values first
-		
-		int partition;
-		
-		System.out.println("inside quickSort, valueA, valueB: " + valueA + " " + valueB + " "); 
-		
-		pivot = Integer.parseInt(count.get(end).toString());
-		partition = partition(names, count, start, end);
-		System.out.println("partition and pivot: " + pivot + " " + partition);
-		quickSort(names, count, start, partition - 1);
-		quickSort(names, count, partition + 1, end);
-		
-	} //end quickSort
-	
-	//preliminary 
-	private int partition(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
-	{
-		System.out.println(Integer.parseInt(count.get(0).toString()) + 2);
-		System.out.println(names.get(0));
-		
-		//index locations we're checking each time
-		int pivot = (end + 1), valueA, valueB;
-		boolean keepGoing = true;
-
-		System.out.println("HERE IS END AND PIVOT " + end + " " + pivot);
-		
-		//should this be strictly lesser than or <=?
-		while (start < end)
-		{
-			System.out.println("start of loop: start and end " + start + " " + end);
-			
-			valueA = Integer.parseInt(count.get(start).toString()); //jesus just accessing these values is a pain.
-			valueB = Integer.parseInt(count.get(pivot).toString()); //compare pivot and start values first
-			
-			//while the values on the left are smaller than the pivot, access the next element.
-			//same goes for larger values, just access the previous element
-			while (Integer.compare(valueA, valueB) < 0) //while a is less than b
-			{
-				System.out.println(Integer.parseInt(count.get(start).toString()) + " > " + Integer.parseInt(count.get(pivot).toString()));
-				start++;
-				valueA = Integer.parseInt(count.get(start).toString()); //move to the next value in the list for continued comparisons
-			} //end while
-			
-			System.out.println("valueA is apparently not smaller than B. Here's A and B " + valueA + " " + valueB);
-			System.out.println("start and end " + start + " " + end);
-			
-			valueA = Integer.parseInt(count.get(end).toString()); //we're now comparing the last values in the array
-			while (Integer.compare(valueA, valueB) > 0) //while b is less than a
-			{
-				System.out.println(Integer.parseInt(count.get(end).toString()) + " > " + Integer.parseInt(count.get(pivot).toString()));
-				end--;
-				valueA = Integer.parseInt(count.get(end).toString());
-			} //end while
-			
-			System.out.println("start and end " + start + " " + end);
-
-			valueA = Integer.parseInt(count.get(start).toString());
-			valueB = Integer.parseInt(count.get(end).toString());
-			int valueC = Integer.parseInt(count.get(pivot).toString());
-			//swap the values if they're in the wrong position based on relative size
-			if (Integer.compare(valueA, valueB) > 0)
-			{
-				System.out.println("names size " + names.size());
-				for (int i = 0; i < names.size(); i++)
-				{
-					System.out.println(count.get(i).toString());
-				}
-				System.out.println("BEFORE SWAP");
-				swap(start, end, names, count);
-				System.out.println("AFTER SWAP");
-				for (int i = 0; i < names.size(); i++)
-				{
-					System.out.println(count.get(i).toString());
-				}
-				start++;
-				end--;
-			} //end if
-
-			System.out.println("end of loop");
-			for (int i = 0; i < names.size(); i++)
-			{
-				System.out.println(count.get(i).toString());
-			}
-		} //end while
-		end++;
-		
-		valueA = Integer.parseInt(count.get(start).toString());
-		valueB = Integer.parseInt(count.get(end).toString());
-		int valueC = Integer.parseInt(count.get(pivot).toString());
-		
-		System.out.println("Here are start and end and pivot " + valueA + " " + valueB + " " + valueC);
-		
-		//only swap the values if either of them are larger: this is because the list is already split in half
-		//so honestly you only really need to switch the values if valueA is larger than valueC right?
-		//maybe look at this again later.
-	    if (Integer.compare(valueA, valueC) >= 0)
-		{
-			System.out.println("start is greater than pivot " + valueA + " " + valueC);
-			swap(start, pivot, names, count);
-		} //end else if
-		
-		else if (Integer.compare(valueB, valueC) >= 0) //otherwise we're at the end and last is large
-		{
-			System.out.println("end is greater than pivot " + valueB + " " + valueC);
-			swap(end, pivot, names, count);
-		} //end else
-	    
-	    return end;
-	} //end partition
-*/
 	
 	//method for swapping the values using usual temp value strategy
 	private void swap(int i, int j, List <String>names, List<Integer> count)
@@ -668,11 +507,12 @@ public class Monitor
 		return results;
 	} //end filterTags
 	
-	//there is an issue where certain blogs, for no discernible reason (other than probably shitty tumblr programming)
-	//will just redirect to that view where you're on the dashboard but the blog just sort of appears in the right side and you have to browse
-	//in this mini view. My program crashes when it hits that because it can't properly read in tags from that url.
-	//so this method is the fix. It reads in each url and checks the response code: if it starts with a 3, it is a redirect, so
-	//just ditch that blog. This is a flaw in the program for obvious reasons: I am not counting tags which are used, kind of undermining
+	//there is an issue where certain blogs, for no discernible reason will just redirect to that view where you're on the dashboard
+	//but the blog just sort of appears in the right side and you have to browse in this mini view
+	//My program crashes when it hits that because it can't properly read in tags from that url, so this method is the band aid
+	//it reads in each url and checks the response code: if it starts with a 3, it is a redirect, so just ditch that blog
+	//
+	//the existence of this method is a flaw in the program for obvious reasons: I am not counting tags which are used, kind of undermining
 	//the point of the program. But I don't know a workaround for this mostly undocumented problem.
 	private boolean checkURL(String url)
 	{
@@ -686,16 +526,13 @@ public class Monitor
 
 			int response = con.getResponseCode();
 			
-			//I'm just doing this as a placeholder, really. I should probably just be checking that the response code starts with 2
-			if ((299 < response) && (response < 400))
+			//2xx is an HTTP status code indicating success
+			final int successLow = 299, successHigh = 400;
+			if ((successLow < response) && (response < successHigh))
 			{
 				return false;
 			} //end if
-			
-			else
-			{
-				return true;
-			} //end else
+			return true;
 		} //end try
 		
 		catch (Exception e)
@@ -704,4 +541,36 @@ public class Monitor
 			return false;
 		} //end catch
 	} //end checkURL
+	
+	//similar to checkURL in that this is to check the validity of the url
+	//the difference is that certain urls will break jumblr/htmlUnit but will still pass checkURL
+	//so this will actually try to visit the url
+	private boolean visitAttempt(String url)
+	{
+		System.out.println("inside visitAttempt, url: " + url);
+		try 
+		{
+			Blog test = tumblrClient.blogInfo(url);
+			System.out.println("blog test done");
+			url = "http://" + url + "/";
+			System.out.println("url: " + url);
+			
+			//I want to check for htmlpage too but this shit breaks hard, even though it's in a try catch block.
+			HtmlPage page = webClient.getPage(url);
+			System.out.println("html test done");
+			
+			//System.out.println("htmlPage test: " + page.getTitleText());
+			System.out.println("jumblr name: " + test.getName());
+			System.out.println("title has been printed");
+			return true;
+		} //end try
+		
+		//catch (FailingHttpStatusCodeException | IOException | MalformedURLException e) 
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			System.out.println("\n\n\n\n\n\n\n\n\nvisit attempt failed on " + url + "\n\n\n\n");
+			return false;
+		} //end catch
+	} //end visitAttempt
 } //end Monitor
