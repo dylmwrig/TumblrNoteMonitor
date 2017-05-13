@@ -26,7 +26,7 @@ public class Monitor
 			"V91snqcARLP1XznQt7vc4nsLtcQZzoK5r3Rtgr7DvTULkDxiHT");
 	private static final Blog MASTER_BLOG = TUMBLR_CLIENT.blogInfo("thelotusmaiden.tumblr.com");
 	
-	private static final int WAIT_TIME = 10000;
+	private static final int WAIT_TIME = 7000;
 
 	//no reason to not make the web client global imo
 //	final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
@@ -59,7 +59,7 @@ public class Monitor
 	{
 		System.out.println("Inside scan");
 		List <Post> posts = MASTER_BLOG.posts();
-		Post newest = posts.get(6); //put the index of whatever post you want in here
+		Post newest = posts.get(3); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
@@ -81,6 +81,7 @@ public class Monitor
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
 			final List<?> reblogs = getAllNotes(link); 
+			System.out.println("reblogs count: " + reblogs.size());
 			System.out.println("type of reblogs: " + reblogs.get(0).getClass().getName());
 			
 			//initialize the iterable to the first reblog so that we've initialized it properly
@@ -97,8 +98,10 @@ public class Monitor
 			
 			//hold the amount of reblogs between certain times
 			int zeroToSix = 0, sixToNoon = 0, noonToSix = 0, sixToMidnight = 0, hour = 0; 
+			HashMap <String, Integer> tagMap = new HashMap<String, Integer>(); //holds every tag and the amount of times each was reblogged
 			
 			//store the child elements of each reblog, so we can more easily navigate it and pull most popular
+		
 			//person to reblog from
 			for (int i = 0; i < reblogs.size(); ++i)
 			{
@@ -107,7 +110,6 @@ public class Monitor
 				children.forEach(target :: add); 					   //add each iterable to the list
 				children = ((DomElement) target.get(1)).getChildElements();
 				children.forEach(target :: add);
-				
 				
 				for (int j = 0; j < target.size(); j++)
 				{
@@ -121,7 +123,8 @@ public class Monitor
 				String[] reblogSplit;
 				reblogSplit = reblogURL.split("post/|\"");
 				
-				reblogID = reblogSplit[4]; //current location of the reblog's id; this seems unreliable but should work for now
+				reblogID = reblogSplit[4]; //current location of the reblog's id
+				System.out.println("reblogID: " + reblogID);
 				
 				for (int j = 0; j < reblogSplit.length; j++)
 				{
@@ -146,6 +149,8 @@ public class Monitor
 				reblog = reblogger.getPost(reblogLong); //get the reblog by post ID
 				System.out.println("source title of reblog: " + reblog.getBlogName());
 				System.out.println("timestamp: " + reblog.getTimestamp());
+				List<String> reblogTags = reblog.getTags();
+				addTags(reblogTags, tagMap);
 				
 				//timestamp is returned as long, representing milliseconds since epoch
 				//multiply by 1000 and set the eastern time zone. The result is a date you can get different info from
@@ -179,6 +184,7 @@ public class Monitor
 				{
 					sixToMidnight++;
 				} //end else
+				
 				//because there is no "reblogged from field" the op has a smaller list
 				//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
 				if (target.size() == 4) 
@@ -199,18 +205,18 @@ public class Monitor
 
 					rebloggedFrom.add(split[1]);
 					
-					int reblogCount = 1; //this person was reblogged from at least once
+					int reblogCount = 1;   //this person was reblogged from at least once
 					boolean append = true; //checks if we need to add the blog name to the end
 					
 					//there is no reason to check the contents of the list if it is empty
-					if (reblogSources.size() == 0) //I wonder if I can just say iter.hasNext here? Does it return false if there's nothing there to begin with?
+					if (reblogSources.size() == 0) 
 					{
 						reblogSources.put(reblogSource, 1); //first item so value is 1
 					} //end if
 					
 					else
 					{
-						Set set = reblogSources.entrySet(); //what is set?
+						Set set = reblogSources.entrySet(); 
 						Iterator iter = set.iterator();
 						
 						while (iter.hasNext())
@@ -241,11 +247,14 @@ public class Monitor
 				} //end else
 			} //end for
 			
+			bubbleSort(tagMap);
+			//TODO refactor
+			//I realize now that I just did basically the same thing more efficiently in the addTags method
+			//see if you can combine functionality
 			ArrayList <String> names = new ArrayList();
 			ArrayList <Integer> count = new ArrayList();
 
-			//is there a better kind of map to use?
-			Map topSources = new LinkedHashMap(); //holds the sources of reblogs
+			//separate the reblogs into separate name and count lists, then sort them
 			if (reblogSources.size() > 0)
 			{
 				Set set = reblogSources.entrySet();
@@ -259,7 +268,6 @@ public class Monitor
 					count.add(Integer.parseInt(keyValue.getValue().toString()));
 				} //end while
 			} //end if
-			
 			bubbleSort(names, count);
 
 			for (int i = 0; i < count.size(); i++)
@@ -282,26 +290,38 @@ public class Monitor
 		} //end finally
 	} //end Test
 	
-	//classic bubble sort
-	private void bubbleSort(ArrayList<String> names, ArrayList<Integer> count)
+	//classic bubble sort using a hashmap
+	//
+	//convert toSort to a set at the beginning to make sorting easier
+	private void bubbleSort(HashMap<String, Integer> toSort)
 	{
-		int tempInt = 0;
-		String tempStr = "";
-		for (int i = 0; i < count.size(); i++)
+		Set<Map.Entry<String, Integer>> hashSet = toSort.entrySet();
+		ArrayList <Map.Entry<String, Integer>> hashArr = new ArrayList<Map.Entry<String, Integer>>(hashSet.toArray().);
+		for (int i = 0; i < hashSet.size(); i++)
 		{
-			for (int j = 0; j < count.size(); j++)
+			int lowVal = hashSet[i].getValue();
+			Iterator innerIter = toSort.entrySet().iterator();
+			while (innerIter.hasNext()))
 			{
-				if (Integer.parseInt(count.get(i).toString()) > Integer.parseInt(count.get(j).toString()))
+				Map.Entry val2 = (Map.Entry)innerIter.next();
+				if ((Integer)val1.getValue() > (Integer)val2.getValue())
 				{
 					tempInt = Integer.parseInt(count.get(i).toString());
 					tempStr = names.get(i).toString();
+					tempMap = val1;
+					
+					temp = i
+					i = j
+					j = temp
+					
+					
 					count.set(i, Integer.parseInt(count.get(j).toString()));
 					count.set(j, tempInt);
 					names.set(i, names.get(j).toString());
 					names.set(j, tempStr);
 				} //end if
-			} //end for
-		} //end for
+			} //end while
+		} //end while
 	} //bubbleSort
 	
 	//sort hashmap based on value, descending order
@@ -354,6 +374,28 @@ public class Monitor
 		names.set(j, tempStr);
 	} //end swap
 	
+	//the purpose of this method is to add a list of tags into the running tagMap
+	//tagMap is the entire hashmap of tags, where the key is the tag and the value is the total running count
+	//tags is the list of tags from an individual reblog to be added to the tagMap
+	//
+	//for each item in tags, check if that item is held as a key in the tagMap
+	//--if it is, iterate that key's value
+	//--otherwise, add the tag to the map
+	private void addTags(List<String> tags, HashMap<String, Integer> tagMap)
+	{
+		for (String tag : tags)
+		{
+			if (tagMap.containsKey(tag))
+			{
+				tagMap.put(tag, tagMap.get(tag) + 1);
+			} //end if
+			else
+			{
+				tagMap.put(tag, 1);
+			} //end else
+		} //end for
+	} //end addTags
+	
 	private void run()
 	{
 		Map<String, String> map = new HashMap<String, String>();
@@ -363,37 +405,6 @@ public class Monitor
 		
 		Post newest = MASTER_BLOG.getPost(154931927092L);
 		List <LinkedHashMap> popularTags = filterTags(newest);
-		//System.out.println(popularTags.get(0).get("a"));
-		
-		//System.out.println(blog.getPostCount());
-		//System.out.println(posts.get(0).getId());
-		//System.out.println(posts.get(posts.size()).getId());
-/*		for (Post post : blog.posts())
-		{
-			
-		} //end for
-*/
-/*
-		List myList = new ArrayList();
-		myList.add("Hello");
-		myList.add("How");
-		myList.add("Are");
-		myList.add("You");
-		
-		List l = new ArrayList();
-		l.add("Hello");
-		l.add("I'm");
-		l.add("Good");
-		l.add("And");
-		l.add("you");
-		myList.retainAll(l);
-		for (int i = 0; i < myList.size(); i++)
-		{
-			System.out.println("myList: " + myList.get(i));
-			System.out.println("l: " + l.get(i));
-		} //end for
-		
-*/
 	} //end Run
 	
 	//I'd like to cast the return of this to the type you're using anyway
@@ -528,12 +539,8 @@ public class Monitor
 			int response = con.getResponseCode();
 			
 			//2xx is an HTTP status code indicating success
-			final int successLow = 299, successHigh = 400;
-			if ((successLow < response) && (response < successHigh))
-			{
-				return false;
-			} //end if
-			return true;
+			final int successLow = 199, successHigh = 300;
+			return ((successLow < response) && (response < successHigh)) ? true : false;
 		} //end try
 		
 		catch (Exception e)
