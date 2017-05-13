@@ -26,7 +26,7 @@ public class Monitor
 			"V91snqcARLP1XznQt7vc4nsLtcQZzoK5r3Rtgr7DvTULkDxiHT");
 	private static final Blog MASTER_BLOG = TUMBLR_CLIENT.blogInfo("thelotusmaiden.tumblr.com");
 	
-	private static final int WAIT_TIME = 10000000;
+	private static final int WAIT_TIME = 10000;
 
 	//no reason to not make the web client global imo
 //	final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
@@ -76,6 +76,7 @@ public class Monitor
 			final HtmlPage page = WEB_CLIENT.getPage(baseURL);
 			System.out.println("Got that page");
 			WEB_CLIENT.waitForBackgroundJavaScript(WAIT_TIME);
+			System.out.println("Here is the page title: ");
 			System.out.println(page.getTitleText());
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
