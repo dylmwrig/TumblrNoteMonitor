@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -12,11 +11,8 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
 import com.gargoylesoftware.htmlunit.html.*; //way too many elements to do it individualy lol
-import com.gargoylesoftware.htmlunit.javascript.host.dom.Node;
-import com.gargoylesoftware.htmlunit.javascript.host.html.HTMLElement;
 import com.tumblr.jumblr.*;
 import com.tumblr.jumblr.types.*;
 
@@ -25,22 +21,25 @@ import org.joda.time.DateTimeZone;
 
 public class Monitor 
 {
-	private JumblrClient tumblrClient = new JumblrClient(
+	private static final JumblrClient TUMBLR_CLIENT = new JumblrClient(
 			"xmHAWsN1lRng5IOyxMBijxmNtrwdAE9VCSqfcITBnxi0BitvOc",
 			"V91snqcARLP1XznQt7vc4nsLtcQZzoK5r3Rtgr7DvTULkDxiHT");
-	private Blog masterBlog = tumblrClient.blogInfo("thelotusmaiden.tumblr.com");
+	private static final Blog MASTER_BLOG = TUMBLR_CLIENT.blogInfo("thelotusmaiden.tumblr.com");
+	
+	private static final int WAIT_TIME = 10000000;
 
 	//no reason to not make the web client global imo
-	final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
-
+//	final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
+	private static final WebClient WEB_CLIENT = new WebClient(BrowserVersion.FIREFOX_45);
+	
 	private Monitor()
 	{
-		
+		WEB_CLIENT.getOptions().setThrowExceptionOnScriptError(false);
 	} //end Constructor
 	
 	public static void main(String args[])
 	{	
-		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
+//		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
 /*
 		if (new Monitor().visitAttempt("nakkilapsi.tumblr.com"))
 		{
@@ -58,7 +57,8 @@ public class Monitor
 	//generic "do stuff" method that I'll refactor after implementation 
 	private void scan()
 	{
-		List <Post> posts = masterBlog.posts();
+		System.out.println("Inside scan");
+		List <Post> posts = MASTER_BLOG.posts();
 		Post newest = posts.get(6); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
@@ -68,12 +68,14 @@ public class Monitor
 		
 		//java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
 		
-		String url = "http://thelotusmaiden.tumblr.com";
-		
+		final String baseURL = "http://thelotusmaiden.tumblr.com";
+//		final String baseURL = "http://www.reddit.com/r/awwnime";
+		System.out.println("Before try");
 		try 
 		{
-			final HtmlPage page = webClient.getPage(url);
-			webClient.waitForBackgroundJavaScript(500);
+			final HtmlPage page = WEB_CLIENT.getPage(baseURL);
+			System.out.println("Got that page");
+			WEB_CLIENT.waitForBackgroundJavaScript(WAIT_TIME);
 			System.out.println(page.getTitleText());
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
@@ -128,9 +130,7 @@ public class Monitor
 				System.out.println("URL of the reblog: " + reblogURL);
 				
 				reblogLong = Long.valueOf(reblogID).longValue();
-				
 				reblogSplit = reblogSplit[3].split("://|/"); //remove the "http://" from the blog name so it can be fed into tumblrClient
-				
 				reblogURL = reblogSplit[1];
 
 				System.out.println("reblogUrl after reblogSplit[1]: " + reblogURL);
@@ -141,7 +141,7 @@ public class Monitor
 					continue;
 				} //end if
 				
-				reblogger = tumblrClient.blogInfo(reblogURL);
+				reblogger = TUMBLR_CLIENT.blogInfo(reblogURL);
 				reblog = reblogger.getPost(reblogLong); //get the reblog by post ID
 				System.out.println("source title of reblog: " + reblog.getBlogName());
 				System.out.println("timestamp: " + reblog.getTimestamp());
@@ -277,7 +277,7 @@ public class Monitor
 		
 		finally
 		{
-			webClient.close();
+			WEB_CLIENT.close();
 		} //end finally
 	} //end Test
 	
@@ -357,10 +357,10 @@ public class Monitor
 	{
 		Map<String, String> map = new HashMap<String, String>();
 		map.put("notes_info", "True");
-		List <Post> posts = masterBlog.posts(map);
+		List <Post> posts = MASTER_BLOG.posts(map);
 		//Post newest = posts.get(4); //put the index of whatever post you want in here
 		
-		Post newest = masterBlog.getPost(154931927092L);
+		Post newest = MASTER_BLOG.getPost(154931927092L);
 		List <LinkedHashMap> popularTags = filterTags(newest);
 		//System.out.println(popularTags.get(0).get("a"));
 		
@@ -402,7 +402,7 @@ public class Monitor
 	private final List<?> getAllNotes(HtmlAnchor link) throws IOException
 	{
 		HtmlPage notePage = link.click(); //this is the page you will pull your notes from
-		webClient.waitForBackgroundJavaScript(500);
+		WEB_CLIENT.waitForBackgroundJavaScript(500);
 
 		//while there are more notes buttons to click, keep clicking
 		//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
@@ -420,7 +420,7 @@ public class Monitor
 				notePage = showMore.click(); //load the extra notes
 				System.out.println("Clicked " + clickCount + " times");
 				clickCount++;
-				webClient.waitForBackgroundJavaScript(500);
+				WEB_CLIENT.waitForBackgroundJavaScript(WAIT_TIME);
 			} //end try
 			
 			catch(Exception e) //make your catches more specific rather than gotta catch em all every time
@@ -463,7 +463,7 @@ public class Monitor
 				
 				if (checkURL(reblogString))
 				{
-					reblogger = tumblrClient.blogInfo(reblogString);
+					reblogger = TUMBLR_CLIENT.blogInfo(reblogString);
 					reblogID = notes.get(i).getPostId();
 					reblog = reblogger.getPost(reblogID);
 					allTags.addAll(reblog.getTags());
@@ -550,13 +550,13 @@ public class Monitor
 		System.out.println("inside visitAttempt, url: " + url);
 		try 
 		{
-			Blog test = tumblrClient.blogInfo(url);
+			Blog test = TUMBLR_CLIENT.blogInfo(url);
 			System.out.println("blog test done");
 			url = "http://" + url + "/";
 			System.out.println("url: " + url);
 			
 			//I want to check for htmlpage too but this shit breaks hard, even though it's in a try catch block.
-			HtmlPage page = webClient.getPage(url);
+			HtmlPage page = WEB_CLIENT.getPage(url);
 			System.out.println("html test done");
 			
 			//System.out.println("htmlPage test: " + page.getTitleText());
