@@ -7,7 +7,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Level;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
@@ -52,7 +54,49 @@ public class Monitor
 		}
 */
 		new Monitor().scan();
+//		new Monitor().test();
 	} //end main
+	
+	private void test()
+	{
+		HashMap<String, Integer> toSort = new HashMap<String, Integer>();
+		toSort.put("three", 3);
+		toSort.put("eleven", 11);
+		toSort.put("thirteen", 13);
+		toSort.put("four", 4);
+		toSort.put("one", 1);
+//		Map.Entry<String, Integer> [] entryArr = toSort.entrySet().toArray(new Map.Entry<String, Integer>[toSort.size()]);
+		Integer[] values = toSort.values().toArray(new Integer[toSort.size()]);
+		String[] keys = toSort.keySet().toArray(new String[toSort.size()]);
+//		for (Map.Entry<String, Integer> i : entryArr)
+		for (int i = 0; i < values.length; i++)
+		{
+			for (int j = 0; j < values.length; j++)
+			{
+				if (values[i] < values[j])
+				{
+					int temp = values[i];
+					values[i] = values[j];
+					values[j] = temp;
+					String tempStr = keys[i];
+					keys[i] = keys[j];
+					keys[j] = tempStr;
+				}
+			}
+		}
+		LinkedHashMap <String, Integer> rtn = new LinkedHashMap<String, Integer>();
+		for (int i = 0; i < values.length; i++)
+		{
+			rtn.put(keys[i], values[i]);
+		}
+
+		Iterator it = rtn.entrySet().iterator();
+		while (it.hasNext())
+		{
+			Map.Entry pair = (Map.Entry)it.next();
+			System.out.println(pair.getKey() + " " + pair.getValue());
+		}
+	}
 	
 	//generic "do stuff" method that I'll refactor after implementation 
 	private void scan()
@@ -150,6 +194,12 @@ public class Monitor
 				System.out.println("source title of reblog: " + reblog.getBlogName());
 				System.out.println("timestamp: " + reblog.getTimestamp());
 				List<String> reblogTags = reblog.getTags();
+				
+				for (String tag : reblogTags)
+				{
+					System.out.println("Here is your tag: " + tag);
+				}
+				
 				addTags(reblogTags, tagMap);
 				
 				//timestamp is returned as long, representing milliseconds since epoch
@@ -244,16 +294,23 @@ public class Monitor
 							System.out.println("Added " + reblogSource + " to the list.\n\n\n");
 						} //end if
 					} //end else
-				} //end else
+				} //end else	
 			} //end for
 			
-			bubbleSort(tagMap);
+			LinkedHashMap<String, Integer> sortedTags = bubbleSortHashMap(tagMap);
+			Iterator it = sortedTags.entrySet().iterator();
+			while (it.hasNext())
+			{
+				Map.Entry pair = (Map.Entry)it.next();
+				System.out.println(pair.getKey() + " " + pair.getValue());
+			} //end while
+			/*
 			//TODO refactor
 			//I realize now that I just did basically the same thing more efficiently in the addTags method
 			//see if you can combine functionality
 			ArrayList <String> names = new ArrayList();
 			ArrayList <Integer> count = new ArrayList();
-
+			
 			//separate the reblogs into separate name and count lists, then sort them
 			if (reblogSources.size() > 0)
 			{
@@ -268,7 +325,7 @@ public class Monitor
 					count.add(Integer.parseInt(keyValue.getValue().toString()));
 				} //end while
 			} //end if
-			bubbleSort(names, count);
+//			bubbleSort(names, count);
 
 			for (int i = 0; i < count.size(); i++)
 			{
@@ -276,8 +333,8 @@ public class Monitor
 			} //end for
 			
 			System.out.println("0-6, 6-12, 12-18, 18-24: " + zeroToSix + " " + sixToNoon + " " + noonToSix + " " + sixToMidnight);
+			*/
 		} //end try
-		
 		
 		catch (Exception e)
 		{
@@ -288,41 +345,44 @@ public class Monitor
 		{
 			WEB_CLIENT.close();
 		} //end finally
-	} //end Test
+	} //end scan
 	
 	//classic bubble sort using a hashmap
 	//
-	//convert toSort to a set at the beginning to make sorting easier
-	private void bubbleSort(HashMap<String, Integer> toSort)
+	//convert toSort to separate key and value arrays at the beginning to make sorting easier
+	//perform the usual bubble sort based on the value array, switching the appropriate items in the key array at the same time
+	//when sorting is complete, add each item from each array into a linked hashmap
+	//return a linked hashmap, which is a hashmap which maintains the order in which items were inserted
+	private LinkedHashMap<String, Integer> bubbleSortHashMap(HashMap<String, Integer> toSort)
 	{
-		Set<Map.Entry<String, Integer>> hashSet = toSort.entrySet();
-		ArrayList <Map.Entry<String, Integer>> hashArr = new ArrayList<Map.Entry<String, Integer>>(hashSet.toArray().);
-		for (int i = 0; i < hashSet.size(); i++)
+		Integer[] values = toSort.values().toArray(new Integer[toSort.size()]);
+		String[] keys = toSort.keySet().toArray(new String[toSort.size()]);
+		
+		for (int i = 0; i < values.length; i++)
 		{
-			int lowVal = hashSet[i].getValue();
-			Iterator innerIter = toSort.entrySet().iterator();
-			while (innerIter.hasNext()))
+			for (int j = 0; j < values.length; j++)
 			{
-				Map.Entry val2 = (Map.Entry)innerIter.next();
-				if ((Integer)val1.getValue() > (Integer)val2.getValue())
+				if (values[i] < values[j])
 				{
-					tempInt = Integer.parseInt(count.get(i).toString());
-					tempStr = names.get(i).toString();
-					tempMap = val1;
+					int temp = values[i];
+					values[i] = values[j];
+					values[j] = temp;
 					
-					temp = i
-					i = j
-					j = temp
-					
-					
-					count.set(i, Integer.parseInt(count.get(j).toString()));
-					count.set(j, tempInt);
-					names.set(i, names.get(j).toString());
-					names.set(j, tempStr);
+					String tempStr = keys[i];
+					keys[i] = keys[j];
+					keys[j] = tempStr;
 				} //end if
-			} //end while
-		} //end while
-	} //bubbleSort
+			} //end for
+		} //end for
+		
+		LinkedHashMap <String, Integer> rtn = new LinkedHashMap<String, Integer>();
+		for (int i = 0; i < values.length; i++)
+		{
+			rtn.put(keys[i], values[i]);
+		} //end for
+		
+		return rtn;
+	} //bubbleSortHashMap
 	
 	//sort hashmap based on value, descending order
 	//also sort by the amount of reblogs that we're even interested in;
@@ -459,7 +519,6 @@ public class Monitor
 		List<String> reblogTags;
 		for (int i = 0; i < notes.size(); i++)
 		{
-
 			if (notes.get(i).getType().equals("reblog"))
 			{
 				reblogString = notes.get(i).getBlogUrl();
