@@ -1,19 +1,21 @@
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.logging.Level;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient; //simulates a web browser
 import com.gargoylesoftware.htmlunit.html.*; //way too many elements to do it individualy lol
-import com.gargoylesoftware.htmlunit.javascript.host.dom.Node;
-import com.gargoylesoftware.htmlunit.javascript.host.html.HTMLElement;
 import com.tumblr.jumblr.*;
 import com.tumblr.jumblr.types.*;
 
@@ -22,162 +24,155 @@ import org.joda.time.DateTimeZone;
 
 public class Monitor 
 {
-	private JumblrClient tumblrClient = new JumblrClient(
+	private static final JumblrClient TUMBLR_CLIENT = new JumblrClient(
 			"xmHAWsN1lRng5IOyxMBijxmNtrwdAE9VCSqfcITBnxi0BitvOc",
 			"V91snqcARLP1XznQt7vc4nsLtcQZzoK5r3Rtgr7DvTULkDxiHT");
-	private Blog blog = tumblrClient.blogInfo("thelotusmaiden.tumblr.com");
+	private static final Blog MASTER_BLOG = TUMBLR_CLIENT.blogInfo("thelotusmaiden.tumblr.com");
 	
+	private static final int WAIT_TIME = 7000;
 
+	//no reason to not make the web client global imo
+//	final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
+	private static final WebClient WEB_CLIENT = new WebClient(BrowserVersion.FIREFOX_45);
+	
 	private Monitor()
 	{
-		
+		WEB_CLIENT.getOptions().setThrowExceptionOnScriptError(false);
 	} //end Constructor
 	
-	//because I'm getting more into java, I'm trying to handle main in a more java way
-	//found this on stackexchange: make main simply call monitor, which will parse input
-	//create objects and the other program startup stuff
 	public static void main(String args[])
-	{
-		//new Monitor().Run();
-		new Monitor().Test();
-		
-		//used for testing quickSort, when you get back to it
-		
-		/*
-		ArrayList names = new ArrayList();
-		ArrayList count = new ArrayList();
-		names.add("I");
-		names.add("don't");
-		names.add("wanna");
-		names.add("live");
-		names.add("no");
-		names.add("mo");
-		names.add("sometimes");
-		count.add(11);
-		count.add(10);
-		count.add(4);
-		count.add(2);
-		count.add(5);
-		count.add(19);
-		count.add(8);
-		
-
-		for (int i = 0; i < count.size(); i++)
+	{	
+//		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
+/*
+		if (new Monitor().visitAttempt("nakkilapsi.tumblr.com"))
 		{
-			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
-		} //end for
+			System.out.println("url is cool");
+		}
 		
-		Monitor myTest = new Monitor();
-		myTest.bubbleSort(names, count);
-		for (int i = 0; i < count.size(); i++)
+		else
 		{
-			System.out.println("After swap names and count " + names.get(i).toString() + " " + count.get(i).toString());
-		} //end for
-		*/
-		/*	
-		int test = Integer.parseInt(count.get(0).toString());
-		int test2 = Integer.parseInt(count.get(1).toString());
-
-		for (int i = 0; i < count.size(); i++)
-		{
-			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
-		} //end for
-		
-		int start = 0, end = (count.size() - 2);
-		
-		System.out.println("test and test2 " + test + " " + test2);
-		System.out.println(Integer.compare(test, test2));
-		Monitor myTest = new Monitor();
-		myTest.quickSort(names, count, start, end);
-		
-		for (int i = 0; i < count.size(); i++)
-		{
-			System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
-		} //end for
-		*/
+			System.out.println("nah it's bad");
+		}
+*/
+		new Monitor().scan();
+//		new Monitor().test();
 	} //end main
 	
-	//test stuff here
-	private void Test()
+	private void test()
 	{
-		List <Post> posts = blog.posts();
-		Post newest = posts.get(6); //put the index of whatever post you want in here
+		HashMap<String, Integer> toSort = new HashMap<String, Integer>();
+		toSort.put("three", 3);
+		toSort.put("eleven", 11);
+		toSort.put("thirteen", 13);
+		toSort.put("four", 4);
+		toSort.put("one", 1);
+//		Map.Entry<String, Integer> [] entryArr = toSort.entrySet().toArray(new Map.Entry<String, Integer>[toSort.size()]);
+		Integer[] values = toSort.values().toArray(new Integer[toSort.size()]);
+		String[] keys = toSort.keySet().toArray(new String[toSort.size()]);
+//		for (Map.Entry<String, Integer> i : entryArr)
+		for (int i = 0; i < values.length; i++)
+		{
+			for (int j = 0; j < values.length; j++)
+			{
+				if (values[i] < values[j])
+				{
+					int temp = values[i];
+					values[i] = values[j];
+					values[j] = temp;
+					String tempStr = keys[i];
+					keys[i] = keys[j];
+					keys[j] = tempStr;
+				}
+			}
+		}
+		LinkedHashMap <String, Integer> rtn = new LinkedHashMap<String, Integer>();
+		for (int i = 0; i < values.length; i++)
+		{
+			rtn.put(keys[i], values[i]);
+		}
+
+		Iterator it = rtn.entrySet().iterator();
+		while (it.hasNext())
+		{
+			Map.Entry pair = (Map.Entry)it.next();
+			System.out.println(pair.getKey() + " " + pair.getValue());
+		}
+	}
+	
+	//select the post using a command line interface (temporary)
+	private int selectPost(List <Post> posts)
+	{
+		int choice;
+		
+		System.out.println("Please select the post you want information on: ");
+		for (int i = 0; i < posts.size(); i++)
+		{
+			System.out.println(i + " " + posts.get(i).getSourceTitle());
+		} //end for
+		Scanner scan = new Scanner(System.in);
+		choice = scan.nextInt() - 1;
+		scan.close();
+		
+		return choice;
+	} //end selectPost
+	
+	//generic "do stuff" method that I'll refactor after implementation 
+	private void scan()
+	{
+		System.out.println("Inside scan");
+		List <Post> posts = MASTER_BLOG.posts();
+		System.out.println("WATASHI NO BEATS " + posts.get(0).getType());
+//		System.out.println(posts.get(0).());
+		Post newest = posts.get(5); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
-		final WebClient webClient = new WebClient(BrowserVersion.CHROME); //simulating chrome because that's what she uses
-		webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-		webClient.getOptions().setThrowExceptionOnScriptError(false);
-		//String url = "http://thelotusmaiden.tumblr.com/post/155180649080/thelotusmaiden-late-night-shopping-high-res";
-		String url = "http://thelotusmaiden.tumblr.com";
+		//webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+		//webClient.getOptions().setThrowExceptionOnScriptError(false);
 		
+		//java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
+		
+		final String BASE_URL = "http://thelotusmaiden.tumblr.com";
+		System.out.println("Before try");
 		try 
 		{
-			final HtmlPage page = webClient.getPage(url);
-			webClient.waitForBackgroundJavaScript(500);
+			final HtmlPage page = WEB_CLIENT.getPage(BASE_URL);
+			System.out.println("Got that page");
+			WEB_CLIENT.waitForBackgroundJavaScript(WAIT_TIME);
+			System.out.println("Here is the page title: ");
 			System.out.println(page.getTitleText());
 
 			HtmlAnchor link = page.getAnchorByHref(postHref); //get the page for the individual post
-			HtmlPage notePage = link.click(); //this is the page you will pull your notes from
-			webClient.waitForBackgroundJavaScript(500);
-
-			//while there are more notes buttons to click, keep clicking
-			//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
-			//the program will crash. So put it in a try block
-			//I may try putting all of the "most popular person to reblog from" section into here but the list you
-			//get from this could be valuable for other stuff like most popular tags.
-			boolean keepClicking = true;
-			int clickCount = 0; //keeps track of amount of show more notes, mainly for testing
-			while (keepClicking)
-			{
-				try
-				{
-					System.out.println("Page name: " + notePage.getBaseURL());
-					HtmlAnchor showMore = notePage.getAnchorByText("Show more notes");
-					notePage = showMore.click(); //load the extra notes
-					System.out.println("Clicked " + clickCount + " times");
-					clickCount++;
-					webClient.waitForBackgroundJavaScript(500);
-				} //end try
-				
-				catch(Exception e) //make your catches more specific rather than gotta catch em all every time
-				{
-					System.out.println("No more notes to display.");
-					System.out.println("Clicked show more " + clickCount + " times.");
-					keepClicking = false;
-				} //end catch
-			} //end while
-		
-			final List<?> reblogs = notePage.getByXPath("//li[starts-with(@class, 'note reblog')]");
+			final List<?> reblogs = getAllNotes(link); 
+			System.out.println("reblogs count: " + reblogs.size());
+			System.out.println("type of reblogs: " + reblogs.get(0).getClass().getName());
 			
-			System.out.println(reblogs.get(10).getClass());
-			//testing
-
 			//initialize the iterable to the first reblog so that we've initialized it properly
 			Iterable<DomElement> children = ((DomElement) reblogs.get(0)).getChildElements();
 			
-			Map reblogSources = new LinkedHashMap(); //holds the sources of reblogs
+			HashMap reblogSources = new HashMap(); //holds the sources of reblogs
 
 			String reblogURL, reblogID;
 			
 			long reblogLong; //convert reblogID to a usable type
 			
-			Blog reblogger; //blog who reblogged the post
-			Post reblog; //reblog itself
+			Blog reblogger;  //blog who reblogged the post
+			Post reblog; 
 			
-			//hold the amount of reblogs between certain times, also the variable which will hold the hour of the reblog
+			//hold the amount of reblogs between certain times
 			int zeroToSix = 0, sixToNoon = 0, noonToSix = 0, sixToMidnight = 0, hour = 0; 
+			HashMap <String, Integer> tagMap = new HashMap<String, Integer>(); //holds every tag and the amount of times each was reblogged
 			
 			//store the child elements of each reblog, so we can more easily navigate it and pull most popular
+		
 			//person to reblog from
 			for (int i = 0; i < reblogs.size(); ++i)
 			{
 				children = ((DomElement) reblogs.get(i)).getChildElements();
 				List<DomElement> target = new ArrayList<DomElement>(); //create array list to hold contents of iterable
-				children.forEach(target :: add); //add each iterable to the list
+				children.forEach(target :: add); 					   //add each iterable to the list
 				children = ((DomElement) target.get(1)).getChildElements();
 				children.forEach(target :: add);
-				
 				
 				for (int j = 0; j < target.size(); j++)
 				{
@@ -191,7 +186,8 @@ public class Monitor
 				String[] reblogSplit;
 				reblogSplit = reblogURL.split("post/|\"");
 				
-				reblogID = reblogSplit[4]; //current location of the reblog's id; this seems unreliable but should work for now
+				reblogID = reblogSplit[4]; //current location of the reblog's id
+				System.out.println("reblogID: " + reblogID);
 				
 				for (int j = 0; j < reblogSplit.length; j++)
 				{
@@ -201,72 +197,85 @@ public class Monitor
 				System.out.println("URL of the reblog: " + reblogURL);
 				
 				reblogLong = Long.valueOf(reblogID).longValue();
-				
 				reblogSplit = reblogSplit[3].split("://|/"); //remove the "http://" from the blog name so it can be fed into tumblrClient
-				
 				reblogURL = reblogSplit[1];
 
-				if (checkURL(reblogURL))
+				System.out.println("reblogUrl after reblogSplit[1]: " + reblogURL);
+				
+				//if the url redirects or is otherwise invalid, just skip the rest of the loop
+				if (!checkURL(reblogURL) || !visitAttempt(reblogURL))
 				{
-					reblogger = tumblrClient.blogInfo(reblogURL);
-					reblog = reblogger.getPost(reblogLong); //get the reblog by post ID
-					System.out.println("source title of reblog: " + reblog.getBlogName());
-					System.out.println("timestamp: " + reblog.getTimestamp());
+					continue;
+				} //end if
+				
+				reblogger = TUMBLR_CLIENT.blogInfo(reblogURL);
+				reblog = reblogger.getPost(reblogLong); //get the reblog by post ID
+				System.out.println("source title of reblog: " + reblog.getBlogName());
+				System.out.println("timestamp: " + reblog.getTimestamp());
+				List<String> reblogTags = reblog.getTags();
+				
+				for (String tag : reblogTags)
+				{
+					System.out.println("Here is your tag: " + tag);
+				}
+				
+				addTags(reblogTags, tagMap);
+				
+				//timestamp is returned as long, representing milliseconds since epoch
+				//multiply by 1000 and set the eastern time zone. The result is a date you can get different info from
+				//"EST" is supported by DateTimeZone, just tested it
+				DateTimeZone timeZone = DateTimeZone.forID("EST"); 
+				DateTime dateTime = new DateTime((reblog.getTimestamp() * 1000), timeZone);
+				
+				//dateTime = dateTime.plus(reblog.getTimestamp());
+				System.out.println("getHourOfDay: " + dateTime.getHourOfDay());
+				System.out.println("getDayOfMonth: " + dateTime.getDayOfMonth());
+				System.out.println("getMonth: " + dateTime.getMonthOfYear());
+				System.out.println("getYear: " + dateTime.getYear());
+				
+				hour = dateTime.getHourOfDay();
+				if (hour < 6)
+				{
+					zeroToSix++;
+				} //end if
+				
+				else if (hour < 12)
+				{
+					sixToNoon++;
+				} //end else if
+
+				else if (hour < 18)
+				{
+					noonToSix++;
+				} //end else if
+				
+				else
+				{
+					sixToMidnight++;
+				} //end else
+				
+				//because there is no "reblogged from field" the op has a smaller list
+				//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
+				if (target.size() == 4) 
+				{
+					System.out.println("Original Post");
+				}
+				
+				else
+				{
+					String brute = target.get(4).toString();
+					String[] split = brute.split("/*");
+					//I want to make this http:// just for specificity but this breaks with https://
+					//maybe find some regex operator for this? Idk
+					split = brute.split("://|\\.tumblr"); 
 					
 					//timestamp is returned as long, representing milliseconds since epoch
 					//multiply by 1000 and set the eastern time zone. The result is a date you can get different info from
 					DateTimeZone timeZone = DateTimeZone.forID("EST"); //"EST" is supported by DateTimeZone, just tested it
 					DateTime dateTime = new DateTime((reblog.getTimestamp() * 1000), timeZone);
 					
-					//dateTime = dateTime.plus(reblog.getTimestamp());
-					System.out.println("getHourOfDay: " + dateTime.getHourOfDay());
-					System.out.println("getDayOfMonth: " + dateTime.getDayOfMonth());
-					System.out.println("getMonth: " + dateTime.getMonthOfYear());
-					System.out.println("getYear: " + dateTime.getYear());
-					
-					hour = dateTime.getHourOfDay();
-					if (hour < 6)
-					{
-						zeroToSix++;
-					} //end if
-					
-					else if (hour < 12)
-					{
-						sixToNoon++;
-					} //end else if
-	
-					else if (hour < 18)
-					{
-						noonToSix++;
-					} //end else if
-					
-					else
-					{
-						sixToMidnight++;
-					} //end else
-					
-					//because there is no "reblogged from field" the op has a smaller list
-					//this can really just be a "if target.size() != 4" instead of an if else but I'll just do this for now for testing
-					if (target.size() == 4) 
-					{
-						System.out.println("Original Post");
-					}
-					
-					else
-					{
-						String brute = target.get(4).toString();
-						String[] split = brute.split("/*");
-						//I want to make this http:// just for specificity but this breaks with https://
-						//maybe find some regex operator for this? Idk
-						split = brute.split("://|\\.tumblr"); 
-						
-						String reblogSource = split[1]; //name of person reblogged from, the stuff between http:// and .tumblr
-						ArrayList<String> rebloggedFrom = new ArrayList<String>();
-	
-						rebloggedFrom.add(split[1]);
-						
-						int reblogCount = 1; //this person was reblogged from at least once
-						boolean append = true; //checks if we need to add the blog name to the end
+          int reblogCount = 1;   //this person was reblogged from at least once
+					boolean append = true; //checks if we need to add the blog name to the end
 						
 						//there is no reason to check the contents of the list if it is empty
 						if (reblogSources.size() == 0) //I wonder if I can just say iter.hasNext here? Does it return false if there's nothing there to begin with?
@@ -304,18 +313,24 @@ public class Monitor
 								System.out.println("Added " + reblogSource + " to the list.\n\n\n");
 							} //end if
 						} //end else
-						
-						//going to store everything in the reblog name array. Also need to do checks
-						//if the name isn't in the list, add it to the end. If it is, 
 					} //end else
-				} //end if
 			} //end for
 			
+			LinkedHashMap<String, Integer> sortedTags = bubbleSortHashMap(tagMap);
+			Iterator it = sortedTags.entrySet().iterator();
+			while (it.hasNext())
+			{
+				Map.Entry pair = (Map.Entry)it.next();
+				System.out.println(pair.getKey() + " " + pair.getValue());
+			} //end while
+			
+			//TODO refactor
+			//I realize now that I just did basically the same thing more efficiently in the addTags method
+			//see if you can combine functionality
 			ArrayList <String> names = new ArrayList();
 			ArrayList <Integer> count = new ArrayList();
-
-			//is there a better kind of map to use?
-			Map topSources = new LinkedHashMap(); //holds the sources of reblogs
+			
+			//separate the reblogs into separate name and count lists, then sort them
 			if (reblogSources.size() > 0)
 			{
 				Set set = reblogSources.entrySet();
@@ -330,16 +345,25 @@ public class Monitor
 				} //end while
 			} //end if
 			
-			bubbleSort(names, count);
+			LinkedHashMap <String, Integer> sortedSources = bubbleSortHashMap(reblogSources);
+			
+			System.out.println("Sorted sources, hopefully:");
+			it = sortedSources.entrySet().iterator();
+			while (it.hasNext())
+			{
+				Map.Entry pair = (Map.Entry)it.next();
+				System.out.println(pair.getKey() + " " + pair.getValue());
+			} //end while
 
+			/*
 			for (int i = 0; i < count.size(); i++)
 			{
 				System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
 			} //end for
+			*/
 			
 			System.out.println("0-6, 6-12, 12-18, 18-24: " + zeroToSix + " " + sixToNoon + " " + noonToSix + " " + sixToMidnight);
 		} //end try
-		
 		
 		catch (Exception e)
 		{
@@ -348,31 +372,46 @@ public class Monitor
 		
 		finally
 		{
-			webClient.close();
+			WEB_CLIENT.close();
 		} //end finally
-	} //end Test
+	} //end scan
 	
-	//amateurish but ez
-	private void bubbleSort(ArrayList<String> names, ArrayList<Integer> count)
+	//classic bubble sort using a hashmap
+	//
+	//convert toSort to separate key and value arrays at the beginning to make sorting easier
+	//perform the usual bubble sort based on the value array, switching the appropriate items in the key array at the same time
+	//when sorting is complete, add each item from each array into a linked hashmap
+	//return a linked hashmap, which is a hashmap which maintains the order in which items were inserted
+	private LinkedHashMap<String, Integer> bubbleSortHashMap(HashMap<String, Integer> toSort)
 	{
-		int tempInt = 0;
-		String tempStr = "";
-		for (int i = 0; i < count.size(); i++)
+		Integer[] values = toSort.values().toArray(new Integer[toSort.size()]);
+		String[] keys = toSort.keySet().toArray(new String[toSort.size()]);
+		
+		for (int i = 0; i < values.length; i++)
 		{
-			for (int j = 0; j < count.size(); j++)
+			for (int j = 0; j < values.length; j++)
 			{
-				if (Integer.parseInt(count.get(i).toString()) > Integer.parseInt(count.get(j).toString()))
+				if (values[i] < values[j])
 				{
-					tempInt = Integer.parseInt(count.get(i).toString());
-					tempStr = names.get(i).toString();
-					count.set(i, Integer.parseInt(count.get(j).toString()));
-					count.set(j, tempInt);
-					names.set(i, names.get(j).toString());
-					names.set(j, tempStr);
+					int temp = values[i];
+					values[i] = values[j];
+					values[j] = temp;
+					
+					String tempStr = keys[i];
+					keys[i] = keys[j];
+					keys[j] = tempStr;
 				} //end if
 			} //end for
 		} //end for
-	} //bubbleSort
+		
+		LinkedHashMap <String, Integer> rtn = new LinkedHashMap<String, Integer>();
+		for (int i = 0; i < values.length; i++)
+		{
+			rtn.put(keys[i], values[i]);
+		} //end for
+		
+		return rtn;
+	} //bubbleSortHashMap
 	
 	//sort hashmap based on value, descending order
 	//also sort by the amount of reblogs that we're even interested in;
@@ -409,125 +448,6 @@ public class Monitor
 		return toSort;
 	} //end sortSources
 	
-/*
-	//quick sort algorithm to sort both most popular person to reblog from and most popular tag
-	//basically anything in this program which will be fed into a list which will need to be sorted will go through this
-	private void quickSort(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
-	{
-		int pivot = (end + 1), valueA, valueB;
-
-		valueA = Integer.parseInt(count.get(start).toString()); //jesus just accessing these values is a pain.
-		valueB = Integer.parseInt(count.get(pivot).toString()); //compare pivot and start values first
-		
-		int partition;
-		
-		System.out.println("inside quickSort, valueA, valueB: " + valueA + " " + valueB + " "); 
-		
-		pivot = Integer.parseInt(count.get(end).toString());
-		partition = partition(names, count, start, end);
-		System.out.println("partition and pivot: " + pivot + " " + partition);
-		quickSort(names, count, start, partition - 1);
-		quickSort(names, count, partition + 1, end);
-		
-	} //end quickSort
-	
-	//preliminary 
-	private int partition(ArrayList<String> names, ArrayList<Integer> count, int start, int end)
-	{
-		System.out.println(Integer.parseInt(count.get(0).toString()) + 2);
-		System.out.println(names.get(0));
-		
-		//index locations we're checking each time
-		int pivot = (end + 1), valueA, valueB;
-		boolean keepGoing = true;
-
-		System.out.println("HERE IS END AND PIVOT " + end + " " + pivot);
-		
-		//should this be strictly lesser than or <=?
-		while (start < end)
-		{
-			System.out.println("start of loop: start and end " + start + " " + end);
-			
-			valueA = Integer.parseInt(count.get(start).toString()); //jesus just accessing these values is a pain.
-			valueB = Integer.parseInt(count.get(pivot).toString()); //compare pivot and start values first
-			
-			//while the values on the left are smaller than the pivot, access the next element.
-			//same goes for larger values, just access the previous element
-			while (Integer.compare(valueA, valueB) < 0) //while a is less than b
-			{
-				System.out.println(Integer.parseInt(count.get(start).toString()) + " > " + Integer.parseInt(count.get(pivot).toString()));
-				start++;
-				valueA = Integer.parseInt(count.get(start).toString()); //move to the next value in the list for continued comparisons
-			} //end while
-			
-			System.out.println("valueA is apparently not smaller than B. Here's A and B " + valueA + " " + valueB);
-			System.out.println("start and end " + start + " " + end);
-			
-			valueA = Integer.parseInt(count.get(end).toString()); //we're now comparing the last values in the array
-			while (Integer.compare(valueA, valueB) > 0) //while b is less than a
-			{
-				System.out.println(Integer.parseInt(count.get(end).toString()) + " > " + Integer.parseInt(count.get(pivot).toString()));
-				end--;
-				valueA = Integer.parseInt(count.get(end).toString());
-			} //end while
-			
-			System.out.println("start and end " + start + " " + end);
-
-			valueA = Integer.parseInt(count.get(start).toString());
-			valueB = Integer.parseInt(count.get(end).toString());
-			int valueC = Integer.parseInt(count.get(pivot).toString());
-			//swap the values if they're in the wrong position based on relative size
-			if (Integer.compare(valueA, valueB) > 0)
-			{
-				System.out.println("names size " + names.size());
-				for (int i = 0; i < names.size(); i++)
-				{
-					System.out.println(count.get(i).toString());
-				}
-				System.out.println("BEFORE SWAP");
-				swap(start, end, names, count);
-				System.out.println("AFTER SWAP");
-				for (int i = 0; i < names.size(); i++)
-				{
-					System.out.println(count.get(i).toString());
-				}
-				start++;
-				end--;
-			} //end if
-
-			System.out.println("end of loop");
-			for (int i = 0; i < names.size(); i++)
-			{
-				System.out.println(count.get(i).toString());
-			}
-		} //end while
-		end++;
-		
-		valueA = Integer.parseInt(count.get(start).toString());
-		valueB = Integer.parseInt(count.get(end).toString());
-		int valueC = Integer.parseInt(count.get(pivot).toString());
-		
-		System.out.println("Here are start and end and pivot " + valueA + " " + valueB + " " + valueC);
-		
-		//only swap the values if either of them are larger: this is because the list is already split in half
-		//so honestly you only really need to switch the values if valueA is larger than valueC right?
-		//maybe look at this again later.
-	    if (Integer.compare(valueA, valueC) >= 0)
-		{
-			System.out.println("start is greater than pivot " + valueA + " " + valueC);
-			swap(start, pivot, names, count);
-		} //end else if
-		
-		else if (Integer.compare(valueB, valueC) >= 0) //otherwise we're at the end and last is large
-		{
-			System.out.println("end is greater than pivot " + valueB + " " + valueC);
-			swap(end, pivot, names, count);
-		} //end else
-	    
-	    return end;
-	} //end partition
-*/
-	
 	//method for swapping the values using usual temp value strategy
 	private void swap(int i, int j, List <String>names, List<Integer> count)
 	{
@@ -543,47 +463,77 @@ public class Monitor
 		names.set(j, tempStr);
 	} //end swap
 	
+	//the purpose of this method is to add a list of tags into the running tagMap
+	//tagMap is the entire hashmap of tags, where the key is the tag and the value is the total running count
+	//tags is the list of tags from an individual reblog to be added to the tagMap
+	//
+	//for each item in tags, check if that item is held as a key in the tagMap
+	//--if it is, iterate that key's value
+	//--otherwise, add the tag to the map
+	private void addTags(List<String> tags, HashMap<String, Integer> tagMap)
+	{
+		for (String tag : tags)
+		{
+			if (tagMap.containsKey(tag))
+			{
+				tagMap.put(tag, tagMap.get(tag) + 1);
+			} //end if
+			else
+			{
+				tagMap.put(tag, 1);
+			} //end else
+		} //end for
+	} //end addTags
+	
 	private void run()
 	{
 		Map<String, String> map = new HashMap<String, String>();
 		map.put("notes_info", "True");
-		List <Post> posts = blog.posts(map);
+		List <Post> posts = MASTER_BLOG.posts(map);
 		//Post newest = posts.get(4); //put the index of whatever post you want in here
 		
-		Post newest = blog.getPost(154931927092L);
+		Post newest = MASTER_BLOG.getPost(154931927092L);
 		List <LinkedHashMap> popularTags = filterTags(newest);
-		//System.out.println(popularTags.get(0).get("a"));
-		
-		//System.out.println(blog.getPostCount());
-		//System.out.println(posts.get(0).getId());
-		//System.out.println(posts.get(posts.size()).getId());
-/*		for (Post post : blog.posts())
-		{
-			
-		} //end for
-*/
-/*
-		List myList = new ArrayList();
-		myList.add("Hello");
-		myList.add("How");
-		myList.add("Are");
-		myList.add("You");
-		
-		List l = new ArrayList();
-		l.add("Hello");
-		l.add("I'm");
-		l.add("Good");
-		l.add("And");
-		l.add("you");
-		myList.retainAll(l);
-		for (int i = 0; i < myList.size(); i++)
-		{
-			System.out.println("myList: " + myList.get(i));
-			System.out.println("l: " + l.get(i));
-		} //end for
-		
-*/
 	} //end Run
+	
+	//I'd like to cast the return of this to the type you're using anyway
+	//which is HtmlListItem
+	//however, looking at the conversion, the type returned from 
+	//notePage.getByXPath is really strange so I'd rather not risk it
+	private final List<?> getAllNotes(HtmlAnchor link) throws IOException
+	{
+		HtmlPage notePage = link.click(); //this is the page you will pull your notes from
+		WEB_CLIENT.waitForBackgroundJavaScript(500);
+
+		//while there are more notes buttons to click, keep clicking
+		//sometimes the post will not have more notes to load: if you try to find an anchor tag which is not there
+		//the program will crash. So put it in a try block
+		//I may try putting all of the "most popular person to reblog from" section into here but the list you
+		//get from this could be valuable for other stuff like most popular tags.
+		boolean keepClicking = true;
+		int clickCount = 0; //keeps track of amount of show more notes, mainly for testing
+		while (keepClicking)
+		{
+			try
+			{
+				System.out.println("Page name: " + notePage.getBaseURL());
+				HtmlAnchor showMore = notePage.getAnchorByText("Show more notes");
+				notePage = showMore.click(); //load the extra notes
+				System.out.println("Clicked " + clickCount + " times");
+				clickCount++;
+				WEB_CLIENT.waitForBackgroundJavaScript(WAIT_TIME);
+			} //end try
+			
+			catch(Exception e) //make your catches more specific rather than gotta catch em all every time
+			{
+				System.out.println("No more notes to display.");
+				System.out.println("Clicked show more " + clickCount + " times.");
+				keepClicking = false;
+			} //end catch
+		} //end while
+	
+		return notePage.getByXPath("//li[starts-with(@class, 'note reblog')]");
+	} //end getAllNotes
 	
 	private List <LinkedHashMap> filterTags(Post newest)
 	{
@@ -598,7 +548,6 @@ public class Monitor
 		List<String> reblogTags;
 		for (int i = 0; i < notes.size(); i++)
 		{
-
 			if (notes.get(i).getType().equals("reblog"))
 			{
 				reblogString = notes.get(i).getBlogUrl();
@@ -614,7 +563,7 @@ public class Monitor
 				
 				if (checkURL(reblogString))
 				{
-					reblogger = tumblrClient.blogInfo(reblogString);
+					reblogger = TUMBLR_CLIENT.blogInfo(reblogString);
 					reblogID = notes.get(i).getPostId();
 					reblog = reblogger.getPost(reblogID);
 					allTags.addAll(reblog.getTags());
@@ -658,16 +607,15 @@ public class Monitor
 		return results;
 	} //end filterTags
 	
-	//there is an issue where certain blogs, for no discernible reason (other than probably shitty tumblr programming)
-	//will just redirect to that view where you're on the dashboard but the blog just sort of appears in the right side and you have to browse
-	//in this mini view. My program crashes when it hits that because it can't properly read in tags from that url.
-	//so this method is the fix. It reads in each url and checks the response code: if it starts with a 3, it is a redirect, so
-	//just ditch that blog. This is a flaw in the program for obvious reasons: I am not counting tags which are used, kind of undermining
+	//there is an issue where certain blogs, for no discernible reason will just redirect to that view where you're on the dashboard
+	//but the blog just sort of appears in the right side and you have to browse in this mini view
+	//My program crashes when it hits that because it can't properly read in tags from that url, so this method is the band aid
+	//it reads in each url and checks the response code: if it starts with a 3, it is a redirect, so just ditch that blog
+	//
+	//the existence of this method is a flaw in the program for obvious reasons: I am not counting tags which are used, kind of undermining
 	//the point of the program. But I don't know a workaround for this mostly undocumented problem.
 	private boolean checkURL(String url)
 	{
-		boolean result = true;
-	
 		//in the filterTags function, I remove the http:// and the end / because that's the format required by jumblr, so just add it back in
 		url = "http://" + url + "/";
 		
@@ -680,25 +628,47 @@ public class Monitor
 
 			int response = con.getResponseCode();
 			
-			//I'm just doing this as a placeholder, really. I should probably just be checking that the response code starts with 2
-			if ((299 < response) && (response < 400))
-			{
-				System.out.println(url + " failed the url check");
-				result = false;
-			} //end if
-			
-			else
-			{
-				System.out.println(url + " passed the url check");
-			}
+			//2xx is an HTTP status code indicating success
+			final int SUCCESS_LOW = 199, SUCCESS_HIGH = 300;
+			return ((SUCCESS_LOW < response) && (response < SUCCESS_HIGH));
 		} //end try
 		
 		catch (Exception e)
 		{
 			System.out.println("There was an error checking the url.");
-			result = false;
+			return false;
 		} //end catch
-		
-		return result;
 	} //end checkURL
+	
+	//similar to checkURL in that this is to check the validity of the url
+	//the difference is that certain urls will break jumblr/htmlUnit but will still pass checkURL
+	//so this will actually try to visit the url
+	private boolean visitAttempt(String url)
+	{
+		System.out.println("inside visitAttempt, url: " + url);
+		try 
+		{
+			Blog test = TUMBLR_CLIENT.blogInfo(url);
+			System.out.println("blog test done");
+			url = "http://" + url + "/";
+			System.out.println("url: " + url);
+			
+			//I want to check for htmlpage too but this shit breaks hard, even though it's in a try catch block.
+			HtmlPage page = WEB_CLIENT.getPage(url);
+			System.out.println("html test done");
+			
+			//System.out.println("htmlPage test: " + page.getTitleText());
+			System.out.println("jumblr name: " + test.getName());
+			System.out.println("title has been printed");
+			return true;
+		} //end try
+		
+		//catch (FailingHttpStatusCodeException | IOException | MalformedURLException e) 
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			System.out.println("\n\n\n\n\n\n\n\n\nvisit attempt failed on " + url + "\n\n\n\n");
+			return false;
+		} //end catch
+	} //end visitAttempt
 } //end Monitor
