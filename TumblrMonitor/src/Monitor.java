@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
@@ -98,12 +99,31 @@ public class Monitor
 		}
 	}
 	
+	//select the post using a command line interface (temporary)
+	private int selectPost(List <Post> posts)
+	{
+		int choice;
+		
+		System.out.println("Please select the post you want information on: ");
+		for (int i = 0; i < posts.size(); i++)
+		{
+			System.out.println(i + " " + posts.get(i).getSourceTitle());
+		} //end for
+		Scanner scan = new Scanner(System.in);
+		choice = scan.nextInt() - 1;
+		scan.close();
+		
+		return choice;
+	} //end selectPost
+	
 	//generic "do stuff" method that I'll refactor after implementation 
 	private void scan()
 	{
 		System.out.println("Inside scan");
 		List <Post> posts = MASTER_BLOG.posts();
-		Post newest = posts.get(3); //put the index of whatever post you want in here
+		System.out.println("WATASHI NO BEATS " + posts.get(0).getType());
+//		System.out.println(posts.get(0).());
+		Post newest = posts.get(5); //put the index of whatever post you want in here
 		
 		String postHref = newest.getPostUrl(); //get the href to find the anchor using jumblr
 		
@@ -112,12 +132,11 @@ public class Monitor
 		
 		//java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
 		
-		final String baseURL = "http://thelotusmaiden.tumblr.com";
-//		final String baseURL = "http://www.reddit.com/r/awwnime";
+		final String BASE_URL = "http://thelotusmaiden.tumblr.com";
 		System.out.println("Before try");
 		try 
 		{
-			final HtmlPage page = WEB_CLIENT.getPage(baseURL);
+			final HtmlPage page = WEB_CLIENT.getPage(BASE_URL);
 			System.out.println("Got that page");
 			WEB_CLIENT.waitForBackgroundJavaScript(WAIT_TIME);
 			System.out.println("Here is the page title: ");
@@ -131,7 +150,7 @@ public class Monitor
 			//initialize the iterable to the first reblog so that we've initialized it properly
 			Iterable<DomElement> children = ((DomElement) reblogs.get(0)).getChildElements();
 			
-			Map reblogSources = new LinkedHashMap(); //holds the sources of reblogs
+			HashMap reblogSources = new HashMap(); //holds the sources of reblogs
 
 			String reblogURL, reblogID;
 			
@@ -304,7 +323,7 @@ public class Monitor
 				Map.Entry pair = (Map.Entry)it.next();
 				System.out.println(pair.getKey() + " " + pair.getValue());
 			} //end while
-			/*
+			
 			//TODO refactor
 			//I realize now that I just did basically the same thing more efficiently in the addTags method
 			//see if you can combine functionality
@@ -325,15 +344,25 @@ public class Monitor
 					count.add(Integer.parseInt(keyValue.getValue().toString()));
 				} //end while
 			} //end if
-//			bubbleSort(names, count);
+			
+			LinkedHashMap <String, Integer> sortedSources = bubbleSortHashMap(reblogSources);
+			
+			System.out.println("Sorted sources, hopefully:");
+			it = sortedSources.entrySet().iterator();
+			while (it.hasNext())
+			{
+				Map.Entry pair = (Map.Entry)it.next();
+				System.out.println(pair.getKey() + " " + pair.getValue());
+			} //end while
 
+			/*
 			for (int i = 0; i < count.size(); i++)
 			{
 				System.out.println("names and count " + names.get(i).toString() + " " + count.get(i).toString());
 			} //end for
+			*/
 			
 			System.out.println("0-6, 6-12, 12-18, 18-24: " + zeroToSix + " " + sixToNoon + " " + noonToSix + " " + sixToMidnight);
-			*/
 		} //end try
 		
 		catch (Exception e)
