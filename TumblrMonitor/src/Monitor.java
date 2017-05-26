@@ -269,51 +269,51 @@ public class Monitor
 					//maybe find some regex operator for this? Idk
 					split = brute.split("://|\\.tumblr"); 
 					
-					String reblogSource = split[1]; //name of person reblogged from, the stuff between http:// and .tumblr
-					ArrayList<String> rebloggedFrom = new ArrayList<String>();
-
-					rebloggedFrom.add(split[1]);
+					//timestamp is returned as long, representing milliseconds since epoch
+					//multiply by 1000 and set the eastern time zone. The result is a date you can get different info from
+					DateTimeZone timeZone = DateTimeZone.forID("EST"); //"EST" is supported by DateTimeZone, just tested it
+					DateTime dateTime = new DateTime((reblog.getTimestamp() * 1000), timeZone);
 					
-					int reblogCount = 1;   //this person was reblogged from at least once
+          int reblogCount = 1;   //this person was reblogged from at least once
 					boolean append = true; //checks if we need to add the blog name to the end
-					
-					//there is no reason to check the contents of the list if it is empty
-					if (reblogSources.size() == 0) 
-					{
-						reblogSources.put(reblogSource, 1); //first item so value is 1
-					} //end if
-					
-					else
-					{
-						Set set = reblogSources.entrySet(); 
-						Iterator iter = set.iterator();
 						
-						while (iter.hasNext())
+						//there is no reason to check the contents of the list if it is empty
+						if (reblogSources.size() == 0) //I wonder if I can just say iter.hasNext here? Does it return false if there's nothing there to begin with?
 						{
-							//map is the java equivalent of the python dictionary
-							Map.Entry keyValue = (Map.Entry)iter.next();
-							//if there is another item in the list which is equal to the item we are checking against
-							//iterate the amount of reblogs which it has and break from the loop
-							if (keyValue.getKey().toString().equals(reblogSource))
-							{
-								reblogCount = (int) keyValue.getValue();
-								reblogCount++;
-								keyValue.setValue(reblogCount);
-								append = false;
-								System.out.println(reblogSource + " has " + reblogCount + " reblogs\n\n\n");
-								break; //no need to keep checking if it's in there once
-							} //end if
-						} //end while
-						
-						//otherwise, if it was nowhere to be found, add it to the end of the list
-						//add the blog to the end with a value of one if it wasn't in the list
-						if (append)
-						{
-							reblogSources.put(reblogSource, reblogCount); 
-							System.out.println("Added " + reblogSource + " to the list.\n\n\n");
+							reblogSources.put(reblogSource, 1); //first item so value is 1
 						} //end if
+						
+						else
+						{
+							Set set = reblogSources.entrySet(); //what is set?
+							Iterator iter = set.iterator();
+							
+							while (iter.hasNext())
+							{
+								//map is the java equivalent of the python dictionary
+								Map.Entry keyValue = (Map.Entry)iter.next();
+								//if there is another item in the list which is equal to the item we are checking against
+								//iterate the amount of reblogs which it has and break from the loop
+								if (keyValue.getKey().toString().equals(reblogSource))
+								{
+									reblogCount = (int) keyValue.getValue();
+									reblogCount++;
+									keyValue.setValue(reblogCount);
+									append = false;
+									System.out.println(reblogSource + " has " + reblogCount + " reblogs\n\n\n");
+									break; //no need to keep checking if it's in there once
+								} //end if
+							} //end while
+							
+							//otherwise, if it was nowhere to be found, add it to the end of the list
+							//add the blog to the end with a value of one if it wasn't in the list
+							if (append)
+							{
+								reblogSources.put(reblogSource, reblogCount); 
+								System.out.println("Added " + reblogSource + " to the list.\n\n\n");
+							} //end if
+						} //end else
 					} //end else
-				} //end else	
 			} //end for
 			
 			LinkedHashMap<String, Integer> sortedTags = bubbleSortHashMap(tagMap);
@@ -621,14 +621,16 @@ public class Monitor
 		
 		try
 		{
+			System.out.println("within checkURL");
+			System.out.println("URL we're trying to check: " + url);
 			URL testURL = new URL(url);
 			HttpURLConnection con = (HttpURLConnection) testURL.openConnection();
 
 			int response = con.getResponseCode();
 			
 			//2xx is an HTTP status code indicating success
-			final int successLow = 199, successHigh = 300;
-			return ((successLow < response) && (response < successHigh)) ? true : false;
+			final int SUCCESS_LOW = 199, SUCCESS_HIGH = 300;
+			return ((SUCCESS_LOW < response) && (response < SUCCESS_HIGH));
 		} //end try
 		
 		catch (Exception e)
